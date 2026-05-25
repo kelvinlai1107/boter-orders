@@ -656,7 +656,11 @@ function goToday() {
     const todayStr = fmtDate(t);
     requestAnimationFrame(() => {
         const el = document.querySelector(`.day-card[data-date="${todayStr}"]`);
-        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        if (el) {
+            const headerH = document.querySelector('header')?.offsetHeight || 62;
+            const top = el.getBoundingClientRect().top + window.scrollY - headerH - 10;
+            window.scrollTo({ top, behavior: 'smooth' });
+        }
     });
 }
 function changeMonth(dir) {
