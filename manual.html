@@ -138,7 +138,8 @@
             <li><a href="#s9">自動儲存與手動儲存</a></li>
             <li><a href="#s10">列印訂單</a></li>
             <li><a href="#s11">品項清單管理</a></li>
-            <li><a href="#s12">常見問題 Q&amp;A</a></li>
+            <li><a href="#s12">設定功能</a></li>
+            <li><a href="#s13">常見問題 Q&amp;A</a></li>
         </ol>
     </div>
 </div>
@@ -473,7 +474,41 @@
 </div>
 
 <!-- ── 12 ── -->
-<h1 class="sec" id="s12"><span class="num">12</span>常見問題 Q&amp;A</h1>
+<h1 class="sec" id="s12"><span class="num">12</span>設定功能</h1>
+
+<p>點擊右上角 <strong>⚙</strong> 圖示開啟設定面板，可調整 SharePoint 連線路徑，以及執行資料清除操作。</p>
+
+<h2 class="sub">SharePoint 路徑設定</h2>
+<table>
+    <tr><th>欄位</th><th>說明</th></tr>
+    <tr><td><strong>SharePoint 網站 URL</strong></td><td>公司 SharePoint 的網站網址</td></tr>
+    <tr><td><strong>資料夾名稱</strong></td><td>儲存訂單資料的 SharePoint 資料夾（預設：訂單管理系統）</td></tr>
+</table>
+
+<h2 class="sub">清除所有訂單資料</h2>
+<p>設定面板底部有「<strong>清除所有訂單資料</strong>」按鈕，或按下快捷鍵 <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>X</kbd> 也可觸發。</p>
+
+<div class="card green" style="margin-top:14px">
+    <div class="card-title">✅ 適合使用的情境</div>
+    <ul style="margin-top:6px; padding-left:20px; line-height:2">
+        <li>系統測試完畢，想刪除測試訂單、重新從空白狀態開始</li>
+        <li>重新整批匯入 Cyberbiz 歷史訂單，需要先清空避免重複</li>
+        <li>交接給新使用者前，清除舊資料重新建立</li>
+    </ul>
+</div>
+
+<div class="card orange" style="margin-top:12px">
+    <div class="card-title">⚠ 正式營運時請勿使用</div>
+    清除後<strong>所有訂單資料將永久消失，無法復原</strong>（包含已儲存到 SharePoint 的紀錄也會在下次自動儲存時被覆蓋）。<br>
+    系統正式上線使用後，請避免在非必要情況下操作此功能。執行前系統會彈出<strong>兩次確認視窗</strong>，請確認情境正確再繼續。
+</div>
+
+<div class="tip" style="margin-top:14px">
+    <span class="tip-icon">💡</span> 若只是想測試特定功能，建議改用手動新增少量測試訂單，再個別刪除，不需要清除全部資料。
+</div>
+
+<!-- ── 13 ── -->
+<h1 class="sec" id="s13"><span class="num">13</span>常見問題 Q&amp;A</h1>
 
 <div class="card" style="margin-bottom:12px">
     <div class="card-title">Q：登入後看不到任何訂單？</div>

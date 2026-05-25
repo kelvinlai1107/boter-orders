@@ -382,7 +382,7 @@
             </div>
             <div>
                 <label class="lbl">資料夾名稱</label>
-                <input class="ctrl" type="text" id="s-folder" placeholder="甜點排程工具">
+                <input class="ctrl" type="text" id="s-folder" placeholder="訂單管理系統">
             </div>
             <div>
                 <label class="lbl">目前登入帳號</label>
@@ -420,7 +420,7 @@ let msal_app, account, orders = [];
 let currentMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
 let calViewDate  = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
 let cfg = JSON.parse(localStorage.getItem('boter_cfg') ||
-    '{"siteUrl":"https://lalaso.sharepoint.com/sites/BOTERCAKER2","folder":"甜點排程工具"}');
+    '{"siteUrl":"https://lalaso.sharepoint.com/sites/BOTERCAKER2","folder":"訂單管理系統"}');
 
 /* ────────────────────────────────────────
    TWO-LEVEL PRODUCTS
@@ -561,7 +561,7 @@ async function getToken() {
 }
 
 /* ── SHAREPOINT ── */
-function filePath() { return `${cfg.folder||'甜點排程工具'}/${FILE_NAME}`; }
+function filePath() { return `${cfg.folder||'訂單管理系統'}/${FILE_NAME}`; }
 async function siteId() {
     const u = new URL(cfg.siteUrl);
     const r = await fetch(`https://graph.microsoft.com/v1.0/sites/${u.hostname}:${u.pathname}`,
@@ -1109,7 +1109,7 @@ async function uploadExcelToSP(file) {
     if (!file||!cfg.siteUrl) return;
     try {
         const sid=await siteId();
-        const folder=cfg.folder||'甜點排程工具';
+        const folder=cfg.folder||'訂單管理系統';
         const path=`${folder}/CY訂單匯出/${file.name}`;
         const url=`https://graph.microsoft.com/v1.0/sites/${sid}/drive/root:/${path}:/content`;
         const buf=await file.arrayBuffer();
@@ -1164,13 +1164,13 @@ function doPrint() {
 /* ── SETTINGS ── */
 function openSettings() {
     document.getElementById('s-url').value    = cfg.siteUrl||'';
-    document.getElementById('s-folder').value = cfg.folder||'甜點排程工具';
+    document.getElementById('s-folder').value = cfg.folder||'訂單管理系統';
     document.getElementById('s-user').textContent = account ? `${account.name}（${account.username}）` : '—';
     openOverlay('settings-overlay');
 }
 function saveSettings() {
     cfg.siteUrl=document.getElementById('s-url').value.trim();
-    cfg.folder =document.getElementById('s-folder').value.trim()||'甜點排程工具';
+    cfg.folder =document.getElementById('s-folder').value.trim()||'訂單管理系統';
     localStorage.setItem('boter_cfg',JSON.stringify(cfg));
     closeOverlay('settings-overlay'); toast('設定已儲存','ok');
 }
