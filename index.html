@@ -99,6 +99,9 @@
         .cal-dot { display:block; width:5px; height:5px; background:#c0392b; border-radius:50%; margin:1px auto 0; }
         .row-dup td:first-child { border-left:3px solid #c9b99a; }
         .row-dup td { color:#b8a898; }
+        .row-cancel td:first-child { border-left:3px solid #c53030; }
+        .row-cancel td { color:#c53030; }
+        .row-cancel .badge-cancel { text-decoration:none; font-size:0.72rem; font-weight:700; }
 
         .btn-act { background:none; border:none; cursor:pointer; padding:3px 5px; border-radius:4px; font-size:0.82rem; color:#c9b99a; }
         .btn-act:hover { background:var(--brand-lt); color:var(--brand); }
@@ -492,8 +495,9 @@ function onCatChange() {
     }
     if (catName === '__OTHER__') {
         sel.innerHTML = '<option value="">— 選商品名稱 —</option>';
-        itemInp.value = '其他';
-        itemInp.readOnly = true; itemInp.style.background = '#F5EDE0';
+        itemInp.value = '';
+        itemInp.readOnly = false; itemInp.style.background = '';
+        itemInp.placeholder = '請輸入品項名稱（選填）';
         return;
     }
     itemInp.readOnly = false; itemInp.style.background = '';
@@ -708,6 +712,14 @@ function pickDay(ds) {
     currentMonth = new Date(d.getFullYear(), d.getMonth(), 1);
     document.getElementById('cal-popup').classList.remove('open');
     render(); renderCalGrid();
+    requestAnimationFrame(() => {
+        const el = document.querySelector(`.day-card[data-date="${ds}"]`);
+        if (el) {
+            const headerH = document.querySelector('header')?.offsetHeight || 62;
+            const top = el.getBoundingClientRect().top + window.scrollY - headerH - 10;
+            window.scrollTo({ top, behavior: 'smooth' });
+        }
+    });
 }
 
 /* ── RENDER ── */
@@ -852,13 +864,20 @@ function openEdit(id) {
     itemInp.readOnly = false; itemInp.style.background = '';
     refreshDatalist(); refreshCatDropdown();
     const cats = getProducts(); const item = o.item||'';
-    for (const cat of cats) {
-        if (item.startsWith(cat.name)) {
-            document.getElementById('f-cat').value = cat.name;
-            onCatChange();
-            const found = (cat.items||[]).find(it=>item.includes(it.name));
-            if (found) document.getElementById('f-item-sel').value = found.name;
-            break;
+    const otherMatch = item.match(/^其他 \((.+)\)$/);
+    if (item === '其他' || otherMatch) {
+        document.getElementById('f-cat').value = '__OTHER__';
+        onCatChange();
+        if (otherMatch) document.getElementById('f-item').value = otherMatch[1];
+    } else {
+        for (const cat of cats) {
+            if (item.startsWith(cat.name)) {
+                document.getElementById('f-cat').value = cat.name;
+                onCatChange();
+                const found = (cat.items||[]).find(it=>item.includes(it.name));
+                if (found) document.getElementById('f-item-sel').value = found.name;
+                break;
+            }
         }
     }
     openOverlay('order-overlay');
@@ -872,10 +891,13 @@ function submitOrder() {
     const id = document.getElementById('f-id').value;
     const isEdit = !!id;
     const existingOrder = isEdit ? orders.find(o=>o.id===id) : null;
+    const catSel  = document.getElementById('f-cat').value;
+    const rawItem = document.getElementById('f-item').value.trim();
+    const itemVal = catSel === '__OTHER__' ? (rawItem ? `其他 (${rawItem})` : '其他') : rawItem;
     const d = {
         date:          document.getElementById('f-date').value,
         deliveryMethod,
-        item:          document.getElementById('f-item').value,
+        item:          itemVal,
         quantity:      parseInt(document.getElementById('f-qty').value)||1,
         customer:      document.getElementById('f-customer').value,
         phone:         document.getElementById('f-phone').value,
@@ -982,7 +1004,8 @@ const COL_MAP = {
     customer:       ['收件人名稱','購買人名稱','收件人','訂購人','購買人','會員名稱'],
     phone:          ['收件人電話','會員手機號碼','電話','手機'],
     orderNotes:     ['備註','訂單備註'],
-    deliveryMethod: ['出貨方式','運送方式','配送方式']
+    deliveryMethod: ['出貨方式','運送方式','配送方式'],
+    orderStatus:    ['訂單狀態','狀態']
 };
 function detectCol(headers, aliases) {
     for (const a of aliases) { const i=headers.findIndex(h=>h.includes(a)); if(i>=0) return i; }
@@ -998,6 +1021,8 @@ function parseRows(headers, dataRows) {
         const base    = get(row, cols.item);
         const variant = get(row, cols.variant);
         const item    = (base && variant && !base.includes(variant) ? `${base} ${variant}` : base).replace(/｜/g,' ');
+        const orderStatus = get(row, cols.orderStatus);
+        const cancelled = orderStatus === '已取消';
         return {
             date, rawDate,
             orderNumber:    get(row, cols.orderNumber),
@@ -1006,9 +1031,10 @@ function parseRows(headers, dataRows) {
             phone:          get(row, cols.phone),
             orderNotes:     get(row, cols.orderNotes),
             deliveryMethod: get(row, cols.deliveryMethod),
+            orderStatus, cancelled,
             valid: !!date
         };
-    }).filter(r=>r.item);
+    }).filter(r=>r.item||r.cancelled);
 }
 function splitCSV(line) {
     const res=[]; let cur=''; let inQ=false;
@@ -1062,37 +1088,61 @@ async function handleFile(file) {
     } catch(e) { toast('解析失敗：'+e.message,'err'); console.error(e); }
 }
 function showPreview() {
-    const ok=parsedRows.filter(r=>r.valid), skip=parsedRows.filter(r=>!r.valid);
-    const dup=ok.filter(r=>orders.some(o=>o.orderNumber&&o.orderNumber===r.orderNumber));
+    const validRows    = parsedRows.filter(r=>r.valid&&!r.cancelled);
+    const cancelRows   = parsedRows.filter(r=>r.cancelled&&r.orderNumber);
+    const skipRows     = parsedRows.filter(r=>!r.valid&&!r.cancelled);
+    const dupRows      = validRows.filter(r=>r.orderNumber&&orders.some(o=>o.orderNumber&&o.orderNumber===r.orderNumber));
+    const toDeleteRows = cancelRows.filter(r=>orders.some(o=>o.orderNumber&&o.orderNumber===r.orderNumber));
+    const dupNums      = new Set(dupRows.map(r=>r.orderNumber));
+    const toDeleteNums = new Set(toDeleteRows.map(r=>r.orderNumber));
     const sum=document.getElementById('import-summary');
-    sum.className='imp-sum'+(skip.length?' warn':'');
-    sum.innerHTML=`共 <strong>${parsedRows.length}</strong> 筆　可匯入 <strong>${ok.length-dup.length}</strong> 筆`
-        +(skip.length?`　⚠ 略過 <strong>${skip.length}</strong> 筆（缺出貨日期）`:'')
-        +(dup.length?`　⚠ <strong>${dup.length}</strong> 筆已存在（略過）`:'');
-    const dupNums=new Set(dup.map(r=>r.orderNumber));
+    const hasWarn=skipRows.length||dupRows.length;
+    sum.className='imp-sum'+(hasWarn?' warn':'');
+    sum.innerHTML=`共 <strong>${parsedRows.length}</strong> 筆　可匯入 <strong>${validRows.length-dupRows.length}</strong> 筆`
+        +(toDeleteRows.length?`　🗑 <strong>${toDeleteRows.length}</strong> 筆已取消（將刪除）`:'')
+        +(skipRows.length?`　⚠ 略過 <strong>${skipRows.length}</strong> 筆（缺出貨日期）`:'')
+        +(dupRows.length?`　⚠ <strong>${dupRows.length}</strong> 筆已存在（略過）`:'');
     document.getElementById('preview-wrap').innerHTML=`
         <table class="preview-table">
             <thead><tr><th>出貨日</th><th>訂單編號</th><th>品項</th><th>量</th><th>收件人</th><th>配送方式</th></tr></thead>
             <tbody>${parsedRows.map(r=>{
-                const isDup=r.orderNumber&&dupNums.has(r.orderNumber);
-                const rowCls=isDup?'row-dup':r.valid?'row-ok':'row-warn';
+                const isDup      = !r.cancelled&&r.orderNumber&&dupNums.has(r.orderNumber);
+                const isDeleting = r.cancelled&&r.orderNumber&&toDeleteNums.has(r.orderNumber);
+                const isCancelSkip = r.cancelled&&r.orderNumber&&!toDeleteNums.has(r.orderNumber);
+                const rowCls = isDeleting?'row-cancel':isCancelSkip?'row-dup':isDup?'row-dup':r.valid?'row-ok':'row-warn';
                 return `<tr class="${rowCls}">
                     <td>${r.date||'<span style="color:#c07820">缺日期</span>'}</td>
-                    <td>${esc(r.orderNumber)}${isDup?' <span style="color:#bbb;font-size:0.75rem">已存在</span>':''}</td>
+                    <td>${esc(r.orderNumber)}
+                        ${isDeleting?' <span class="badge-cancel">已取消→將刪除</span>':''}
+                        ${isCancelSkip?' <span style="color:#bbb;font-size:0.72rem">已取消</span>':''}
+                        ${isDup?' <span style="color:#bbb;font-size:0.72rem">已存在</span>':''}
+                    </td>
                     <td>${esc(r.item)}</td>
-                    <td>${r.quantity}</td><td>${esc(r.customer)}</td><td>${esc(r.deliveryMethod)}</td>
+                    <td>${r.quantity||''}</td><td>${esc(r.customer)}</td><td>${esc(r.deliveryMethod)}</td>
                 </tr>`;
             }).join('')}
             </tbody>
         </table>`;
     document.getElementById('import-step1').style.display='none';
     document.getElementById('import-step2').style.display='';
-    if (ok.length-dup.length>0) document.getElementById('btn-do-import').style.display='';
+    if (validRows.length-dupRows.length>0||toDeleteRows.length>0)
+        document.getElementById('btn-do-import').style.display='';
 }
 function doImport() {
-    const existing=new Set(orders.map(o=>o.orderNumber).filter(Boolean));
-    let added=0;
-    parsedRows.filter(r=>r.valid).forEach(r=>{
+    const existing = new Set(orders.map(o=>o.orderNumber).filter(Boolean));
+    // 1. 刪除已取消訂單
+    const cancelNums = new Set(
+        parsedRows.filter(r=>r.cancelled&&r.orderNumber&&existing.has(r.orderNumber)).map(r=>r.orderNumber)
+    );
+    let deleted = 0;
+    if (cancelNums.size > 0) {
+        const before = orders.length;
+        orders = orders.filter(o=>!o.orderNumber||!cancelNums.has(o.orderNumber));
+        deleted = before - orders.length;
+    }
+    // 2. 匯入新訂單
+    let added = 0;
+    parsedRows.filter(r=>r.valid&&!r.cancelled).forEach(r=>{
         if (r.orderNumber&&existing.has(r.orderNumber)) return;
         orders.push({id:uid(),source:'import',modified:false,pickup:'未取貨',
             createdDate:fmtDate(new Date()),
@@ -1102,11 +1152,12 @@ function doImport() {
         added++;
     });
     localSave();
-    const first=parsedRows.find(r=>r.valid)?.date;
+    const first = parsedRows.find(r=>r.valid&&!r.cancelled)?.date;
     if (first) { const d=new Date(first+'T00:00:00'); currentMonth=new Date(d.getFullYear(),d.getMonth(),1); }
     render(); renderCalGrid();
     if (lastImportFile) uploadExcelToSP(lastImportFile);
-    resetImport(); toast(`已匯入 ${added} 筆訂單 ✓`,'ok');
+    const msg = [added?`匯入 ${added} 筆`:'', deleted?`刪除 ${deleted} 筆已取消訂單`:''].filter(Boolean).join('　');
+    resetImport(); toast(msg||'無變更 ✓','ok');
     scheduleAutoSave();
 }
 async function uploadExcelToSP(file) {
