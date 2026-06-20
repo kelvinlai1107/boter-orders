@@ -520,6 +520,7 @@ function productOrder(item) {
     if (!item) return 999999;
     const ni = normItem(item);
     const cats = getProducts();
+    // First pass: exact match
     for (let ci = 0; ci < cats.length; ci++) {
         const cat = cats[ci];
         for (let ii = 0; ii < (cat.items||[]).length; ii++) {
@@ -529,6 +530,14 @@ function productOrder(item) {
         }
         const nCat = normItem(cat.name);
         if (ni === nCat || ni.startsWith(nCat+' ')) return ci*1000+500;
+    }
+    // Second pass: prefix match (Cyberbiz appends variant suffix, e.g. "分享罐 粉紅款")
+    for (let ci = 0; ci < cats.length; ci++) {
+        const cat = cats[ci];
+        for (let ii = 0; ii < (cat.items||[]).length; ii++) {
+            const nIt = normItem(cat.items[ii].name);
+            if (ni.startsWith(nIt + ' ')) return ci*1000+ii;
+        }
     }
     return 999999;
 }
