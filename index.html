@@ -156,6 +156,15 @@
         .imp-sum { background:#F0EBE0; border-radius:8px; padding:9px 13px; font-size:0.84rem; color:var(--brand-dk); }
         .imp-sum.warn { background:#fdf5e0; color:#7a5820; }
 
+        /* MAPPING STEP */
+        .map-scroll { max-height:360px; overflow-y:auto; padding-right:4px; }
+        .map-card { background:#FDFAF7; border:1px solid var(--border); border-radius:8px; padding:12px 14px; margin-bottom:10px; }
+        .map-item-name { font-size:0.83rem; font-weight:700; color:#5a4030; background:#F5EDE0; border-radius:5px; padding:4px 9px; margin-bottom:10px; word-break:break-all; }
+        .map-radio-group { display:flex; flex-direction:column; gap:7px; }
+        .map-radio-row { display:flex; align-items:center; gap:8px; font-size:0.84rem; color:#5a4030; flex-wrap:wrap; }
+        .map-radio-row select { font-size:0.82rem; border:1px solid var(--border); border-radius:5px; padding:3px 7px; background:#fff; max-width:280px; }
+        .map-step-note { font-size:0.78rem; color:#9B7850; margin-top:10px; background:#F5EDE0; border-radius:6px; padding:7px 10px; }
+
         /* TOAST */
         .toast { position:fixed; bottom:22px; right:22px; background:#3D2B1A; color:#fff; padding:10px 20px; border-radius:9px; font-size:0.83rem; z-index:9999; opacity:0; transition:opacity .3s; pointer-events:none; }
         .toast.show { opacity:1; }
@@ -351,8 +360,17 @@
             <div class="preview-wrap" id="preview-wrap"></div>
             <div style="margin-top:8px;font-size:0.77rem;color:#9B7850;">綠色 = 可匯入　橘色 = 缺出貨日期，略過　灰色 = 已存在，略過</div>
         </div>
+        <div id="import-step3" style="display:none">
+            <div style="font-size:0.85rem;font-weight:700;color:#7A5220;margin-bottom:10px;">📋 品項對照</div>
+            <div style="font-size:0.82rem;color:#7a5820;margin-bottom:12px;">以下商品名稱在品項清單中未找到對應，請選擇處理方式：</div>
+            <div class="map-scroll" id="map-list"></div>
+            <div class="map-step-note">💡 套用後系統會開啟品項清單，讓您編輯工具顯示名稱。儲存品項清單後，匯入將自動完成。</div>
+        </div>
         <div class="mf">
             <button class="btn-cx" onclick="resetImport()">取消</button>
+            <button class="btn-p" id="btn-show-mapping" style="display:none" onclick="showMappingStep()">品項對照 →</button>
+            <button class="btn-p" id="btn-apply-mapping" style="display:none" onclick="applyMappings()">套用並編輯品項清單</button>
+            <button class="btn-p" id="btn-skip-mapping" style="display:none" onclick="doImport()">略過，直接匯入</button>
             <button class="btn-g" id="btn-do-import" style="display:none" onclick="doImport()">確認匯入</button>
         </div>
     </div>
@@ -1021,6 +1039,7 @@ function saveProducts() {
     });
     const cleaned = tempProds.filter(c=>c.name).map(c=>({...c,items:(c.items||[]).filter(it=>it.name)}));
     setProducts(cleaned); closeOverlay('products-overlay'); render(); toast('品項清單已儲存','ok');
+    if (pendingImport) { pendingImport = false; openOverlay('import-overlay'); doImport(); }
 }
 
 function quickPickup(id, val) {
@@ -1030,6 +1049,82 @@ function quickPickup(id, val) {
 
 /* ── IMPORT ── */
 let parsedRows = [], lastImportFile = null;
+let unmappedItems = [], pendingImport = false;
+
+function findUnmappedItems() {
+    const seen = new Set(), result = [];
+    for (const r of parsedRows.filter(r=>r.valid&&!r.cancelled)) {
+        if (!r.item || seen.has(r.item)) continue;
+        seen.add(r.item);
+        if (productOrder(r.item) === 999999) result.push(r.item);
+    }
+    return result;
+}
+function showMappingStep() {
+    const names = findUnmappedItems();
+    if (!names.length) { doImport(); return; }
+    unmappedItems = names.map(n => ({ cyberName:n, action:'skip', matchId:null, catIdx:0 }));
+    renderMappingStep();
+    document.getElementById('import-step2').style.display = 'none';
+    document.getElementById('import-step3').style.display = '';
+    document.getElementById('btn-show-mapping').style.display = 'none';
+    document.getElementById('btn-do-import').style.display = 'none';
+    document.getElementById('btn-apply-mapping').style.display = '';
+    document.getElementById('btn-skip-mapping').style.display = '';
+}
+function renderMappingStep() {
+    const cats = getProducts();
+    const allProds = [];
+    cats.forEach((cat,ci) => (cat.items||[]).forEach((it,ii) =>
+        allProds.push({ label:`${cat.name}  ›  ${it.name}`, id:it.id })
+    ));
+    document.getElementById('map-list').innerHTML = unmappedItems.map((u,idx) => `
+        <div class="map-card">
+            <div class="map-item-name">📦 ${esc(u.cyberName)}</div>
+            <div class="map-radio-group">
+                <label class="map-radio-row">
+                    <input type="radio" name="ma${idx}" value="match" onchange="unmappedItems[${idx}].action='match'">
+                    對應到現有品項（更新名稱）：
+                    <select onchange="unmappedItems[${idx}].matchId=this.value;document.querySelector('[name=ma${idx}][value=match]').checked=true;unmappedItems[${idx}].action='match'">
+                        <option value="">— 選擇品項 —</option>
+                        ${allProds.map(p=>`<option value="${esc(p.id)}">${esc(p.label)}</option>`).join('')}
+                    </select>
+                </label>
+                <label class="map-radio-row">
+                    <input type="radio" name="ma${idx}" value="add" onchange="unmappedItems[${idx}].action='add'">
+                    新增至品項清單，類別：
+                    <select onchange="unmappedItems[${idx}].catIdx=+this.value;document.querySelector('[name=ma${idx}][value=add]').checked=true;unmappedItems[${idx}].action='add'">
+                        ${cats.map((c,ci)=>`<option value="${ci}">${esc(c.name)}</option>`).join('')}
+                    </select>
+                </label>
+                <label class="map-radio-row">
+                    <input type="radio" name="ma${idx}" value="skip" checked onchange="unmappedItems[${idx}].action='skip'">
+                    略過（僅匯入，不更新品項清單）
+                </label>
+            </div>
+        </div>`).join('');
+}
+function applyMappings() {
+    const cats = JSON.parse(JSON.stringify(getProducts()));
+    for (const u of unmappedItems) {
+        if (u.action === 'match' && u.matchId) {
+            outer: for (const cat of cats)
+                for (const it of (cat.items||[]))
+                    if (it.id === u.matchId) { it.name = u.cyberName; break outer; }
+        } else if (u.action === 'add') {
+            const ci = u.catIdx >= 0 && u.catIdx < cats.length ? u.catIdx : 0;
+            if (cats[ci]) {
+                if (!cats[ci].items) cats[ci].items = [];
+                cats[ci].items.push({ id:uid(), name:u.cyberName, displayName:'' });
+            }
+        }
+    }
+    setProducts(cats);
+    pendingImport = true;
+    closeOverlay('import-overlay');
+    openProducts();
+    toast('品項清單已更新，請編輯工具顯示名稱後按「儲存」完成匯入', '');
+}
 const COL_MAP = {
     date:           ['指定配送日期','預計出貨日','出貨日期','出貨日'],
     orderNumber:    ['訂單編號','單號'],
@@ -1086,10 +1181,14 @@ function normalizeDate(raw) {
 }
 function openImport() { openOverlay('import-overlay'); }
 function resetImport() {
-    parsedRows=[]; lastImportFile=null;
+    parsedRows=[]; lastImportFile=null; unmappedItems=[]; pendingImport=false;
     document.getElementById('import-step1').style.display='';
     document.getElementById('import-step2').style.display='none';
+    document.getElementById('import-step3').style.display='none';
     document.getElementById('btn-do-import').style.display='none';
+    document.getElementById('btn-show-mapping').style.display='none';
+    document.getElementById('btn-apply-mapping').style.display='none';
+    document.getElementById('btn-skip-mapping').style.display='none';
     document.getElementById('file-input').value='';
     closeOverlay('import-overlay');
 }
@@ -1160,8 +1259,15 @@ function showPreview() {
         </table>`;
     document.getElementById('import-step1').style.display='none';
     document.getElementById('import-step2').style.display='';
-    if (validRows.length-dupRows.length>0||toDeleteRows.length>0)
-        document.getElementById('btn-do-import').style.display='';
+    if (validRows.length-dupRows.length>0||toDeleteRows.length>0) {
+        const unmatched = findUnmappedItems();
+        if (unmatched.length) {
+            document.getElementById('btn-show-mapping').style.display='';
+            document.getElementById('btn-do-import').style.display='';
+        } else {
+            document.getElementById('btn-do-import').style.display='';
+        }
+    }
 }
 function doImport() {
     const existing = new Set(orders.map(o=>o.orderNumber).filter(Boolean));
