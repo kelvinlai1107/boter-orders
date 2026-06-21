@@ -130,8 +130,12 @@
         .cat-inp:focus { border-bottom:1px solid var(--brand); }
         .item-rows { padding:6px 10px 6px 20px; display:flex; flex-direction:column; gap:4px; }
         .item-row { display:flex; align-items:center; gap:6px; }
-        .item-inp { flex:1; border:none; background:transparent; font-size:0.86rem; font-family:inherit; outline:none; color:#5a4030; }
+        .item-inp { flex:1.5; border:none; background:transparent; font-size:0.86rem; font-family:inherit; outline:none; color:#5a4030; }
         .item-inp:focus { border-bottom:1px solid var(--brand); }
+        .disp-arr { color:#c9b99a; font-size:0.75rem; flex-shrink:0; }
+        .disp-inp { flex:1; border:none; border-bottom:1px dashed #d0c0a8; background:transparent; font-size:0.82rem; font-family:inherit; outline:none; color:#9B6B2E; padding:1px 3px; }
+        .disp-inp::placeholder { color:#d0b898; font-style:italic; }
+        .disp-inp:focus { border-bottom:1px solid var(--brand); }
         .item-add-row { padding:4px 10px 8px 20px; }
         .prod-btn { background:none; border:none; cursor:pointer; padding:2px 6px; border-radius:4px; font-size:0.82rem; color:#c9b99a; }
         .prod-btn:hover { background:var(--brand-lt); color:var(--brand); }
@@ -304,7 +308,8 @@
     <div class="modal modal-lg">
         <div class="modal-title">📋 品項清單管理</div>
         <div style="font-size:0.79rem;color:#9B7850;margin-bottom:12px;">
-            <strong>商品類別</strong>（第一層）可包含多個 <strong>商品名稱</strong>（第二層）。排序決定訂單顯示順序。
+            <strong>商品類別</strong>（第一層）可包含多個 <strong>商品名稱</strong>（第二層）。排序決定訂單顯示順序。<br>
+            <span style="color:#9B6B2E;">→ <strong>工具顯示名稱</strong>（選填）：自訂縮短的品項名稱，訂單頁面將顯示此名稱取代原始名稱。</span>
         </div>
         <div class="prod-scroll" id="prod-tree"></div>
         <div class="cat-add-row">
@@ -813,6 +818,17 @@ function esc(s) {
 }
 function displayItem(item) {
     if (!item) return '';
+    const ni = normItem(item);
+    for (const cat of getProducts()) {
+        for (const it of (cat.items||[])) {
+            const nIt = normItem(it.name);
+            if (ni === nIt || ni === normItem(cat.name+' '+it.name) || ni.startsWith(nIt+' ')) {
+                if (it.displayName) return it.displayName;
+                if (item.startsWith(cat.name+' ')) return item.slice(cat.name.length+1);
+                return item;
+            }
+        }
+    }
     for (const cat of getProducts()) {
         if (item.startsWith(cat.name+' ')) return item.slice(cat.name.length+1);
     }
@@ -944,6 +960,8 @@ function renderProdTree() {
                     <div class="item-row">
                         <span style="color:#c9b99a;font-size:0.78rem;width:16px;flex-shrink:0">└</span>
                         <input class="item-inp" value="${esc(it.name)}" onchange="tempProds[${ci}].items[${ii}].name=this.value.trim()" placeholder="商品名稱">
+                        <span class="disp-arr">→</span>
+                        <input class="disp-inp" data-ci="${ci}" data-ii="${ii}" value="${esc(it.displayName||'')}" placeholder="工具顯示名稱（選填）">
                         <button class="prod-btn" onclick="moveItem(${ci},${ii},-1)" ${ii===0?'disabled':''}>↑</button>
                         <button class="prod-btn" onclick="moveItem(${ci},${ii},1)" ${ii===(cat.items||[]).length-1?'disabled':''}>↓</button>
                         <button class="prod-btn del" onclick="delItem(${ci},${ii})">✕</button>
@@ -990,9 +1008,17 @@ function delItem(ci,ii) {
 }
 function syncProdInputs() {
     document.querySelectorAll('.cat-inp').forEach((inp,ci)=>{ if(tempProds[ci]) tempProds[ci].name=inp.value.trim(); });
+    document.querySelectorAll('.disp-inp').forEach(inp=>{
+        const ci=+inp.dataset.ci, ii=+inp.dataset.ii;
+        if(tempProds[ci]?.items?.[ii]) tempProds[ci].items[ii].displayName=inp.value.trim();
+    });
 }
 function saveProducts() {
     document.querySelectorAll('.cat-inp').forEach((inp,ci)=>{ if(tempProds[ci]) tempProds[ci].name=inp.value.trim(); });
+    document.querySelectorAll('.disp-inp').forEach(inp=>{
+        const ci=+inp.dataset.ci, ii=+inp.dataset.ii;
+        if(tempProds[ci]?.items?.[ii]) tempProds[ci].items[ii].displayName=inp.value.trim();
+    });
     const cleaned = tempProds.filter(c=>c.name).map(c=>({...c,items:(c.items||[]).filter(it=>it.name)}));
     setProducts(cleaned); closeOverlay('products-overlay'); render(); toast('品項清單已儲存','ok');
 }
