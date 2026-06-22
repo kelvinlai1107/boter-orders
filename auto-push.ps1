@@ -9,9 +9,10 @@ $DebounceMs = 4000   # 變更後等待 4 秒再推送（避免連續寫入重複
 
 Write-Host ""
 Write-Host "====================================================" -ForegroundColor Cyan
-Write-Host "  Boter 訂單管理系統 自動推送已啟動" -ForegroundColor Cyan
+Write-Host "  Boter 訂單管理系統 自動推送已啟動（開發模式）" -ForegroundColor Cyan
 Write-Host "  監視：$WatchDir\*.html" -ForegroundColor Gray
-Write-Host "  每次儲存後約 4 秒自動 commit + push" -ForegroundColor Gray
+Write-Host "  每次儲存後約 4 秒自動 commit + push → dev 分支" -ForegroundColor Gray
+Write-Host "  線上正式版不受影響，確認無誤後執行 deploy.ps1" -ForegroundColor Yellow
 Write-Host "  按 Ctrl+C 停止" -ForegroundColor Gray
 Write-Host "====================================================" -ForegroundColor Cyan
 Write-Host ""
@@ -51,10 +52,18 @@ $timerAction = {
         return
     }
 
-    # git push
-    $pushOut = & git push 2>&1
+    # 確保在 dev 分支
+    $branch = (& git rev-parse --abbrev-ref HEAD 2>&1).Trim()
+    if ($branch -ne 'dev') {
+        Write-Host "  ✗ 目前不在 dev 分支（目前：$branch），請先切換：git checkout dev" -ForegroundColor Red
+        return
+    }
+
+    # git push → dev
+    $pushOut = & git push origin dev 2>&1
     if ($LASTEXITCODE -eq 0) {
-        Write-Host "  ✓ 已推送到 GitHub Pages" -ForegroundColor Green
+        Write-Host "  ✓ 已推送到 dev 分支（線上正式版未異動）" -ForegroundColor Green
+        Write-Host "  → 確認無誤後，執行 deploy.ps1 發布到線上" -ForegroundColor DarkYellow
     } else {
         Write-Host "  ✗ push 失敗：$pushOut" -ForegroundColor Red
     }
