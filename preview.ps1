@@ -19,7 +19,7 @@ if ($branch -ne 'dev') {
     Write-Host "✗ 請先切換到 dev 分支（目前：$branch）" -ForegroundColor Red
     exit 1
 }
-$status = (& git status --porcelain 2>&1).Trim()
+$status = (& git status --porcelain 2>&1) -join ''
 if ($status) {
     Write-Host "✗ 有未提交的變更，請先讓 auto-push 完成：" -ForegroundColor Red
     Write-Host $status -ForegroundColor Gray

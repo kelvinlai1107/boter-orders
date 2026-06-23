@@ -14,7 +14,7 @@ Write-Host "====================================================" -ForegroundCol
 Write-Host ""
 
 # 確認目前狀態乾淨
-$status = (& git status --porcelain 2>&1).Trim()
+$status = (& git status --porcelain 2>&1) -join ''
 if ($status) {
     Write-Host "✗ 有未提交的變更，請先儲存並讓 auto-push 完成：" -ForegroundColor Red
     Write-Host $status -ForegroundColor Gray
