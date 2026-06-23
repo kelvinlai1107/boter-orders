@@ -543,7 +543,13 @@ function onItemSel() {
     }
 }
 
-function normItem(s) { return String(s||'').replace(/｜/g,' ').replace(/\s+/g,' ').trim(); }
+function normItem(s) {
+    return String(s||'')
+        .replace(/｜/g,' ')
+        .replace(/[－‐–—]/g,'-')
+        .replace(/（/g,'(').replace(/）/g,')')
+        .replace(/\s+/g,' ').trim();
+}
 function productOrder(item) {
     if (!item) return 999999;
     const ni = normItem(item);
@@ -559,12 +565,12 @@ function productOrder(item) {
         const nCat = normItem(cat.name);
         if (ni === nCat || ni.startsWith(nCat+' ')) return ci*1000+500;
     }
-    // Second pass: prefix match (Cyberbiz appends variant suffix, e.g. "分享罐 粉紅款")
+    // Second pass: prefix match (Cyberbiz appends variant suffix with various separators)
     for (let ci = 0; ci < cats.length; ci++) {
         const cat = cats[ci];
         for (let ii = 0; ii < (cat.items||[]).length; ii++) {
             const nIt = normItem(cat.items[ii].name);
-            if (ni.startsWith(nIt + ' ')) return ci*1000+ii;
+            if (ni.startsWith(nIt+' ') || ni.startsWith(nIt+'-') || ni.startsWith(nIt+'(')) return ci*1000+ii;
         }
     }
     return 999999;
@@ -775,7 +781,10 @@ function render() {
         const ds = fmtDate(day);
         const dayOrders = orders.filter(o=>o.date===ds).sort((a,b)=>{
             const oa=productOrder(a.item), ob=productOrder(b.item);
-            return oa!==ob ? oa-ob : (a.orderNumber||'').localeCompare(b.orderNumber||'');
+            if (oa!==ob) return oa-ob;
+            const da=displayItem(a.item||''), db=displayItem(b.item||'');
+            if (da!==db) return da.localeCompare(db,'zh-TW');
+            return (a.orderNumber||'').localeCompare(b.orderNumber||'');
         });
         const isToday = ds === todayStr;
         const card = document.createElement('div');
