@@ -546,7 +546,7 @@ function onItemSel() {
 function normItem(s) {
     return String(s||'')
         .replace(/｜/g,' ')
-        .replace(/[－‐–—]/g,'-')
+        .replace(/[-－‐–—]/g,' ')
         .replace(/（/g,'(').replace(/）/g,')')
         .replace(/\s+/g,' ').trim();
 }
@@ -570,7 +570,7 @@ function productOrder(item) {
         const cat = cats[ci];
         for (let ii = 0; ii < (cat.items||[]).length; ii++) {
             const nIt = normItem(cat.items[ii].name);
-            if (ni.startsWith(nIt+' ') || ni.startsWith(nIt+'-') || ni.startsWith(nIt+'(')) return ci*1000+ii;
+            if (ni.startsWith(nIt+' ') || ni.startsWith(nIt+'(')) return ci*1000+ii;
         }
     }
     return 999999;
@@ -851,10 +851,22 @@ function esc(s) {
 function displayItem(item) {
     if (!item) return '';
     const ni = normItem(item);
+    // First pass: exact match only (prevents shorter base item from stealing longer variant)
     for (const cat of getProducts()) {
         for (const it of (cat.items||[])) {
             const nIt = normItem(it.name);
-            if (ni === nIt || ni === normItem(cat.name+' '+it.name) || ni.startsWith(nIt+' ')) {
+            if (ni === nIt || ni === normItem(cat.name+' '+it.name)) {
+                if (it.displayName) return it.displayName;
+                if (item.startsWith(cat.name+' ')) return item.slice(cat.name.length+1);
+                return it.name;
+            }
+        }
+    }
+    // Second pass: prefix match
+    for (const cat of getProducts()) {
+        for (const it of (cat.items||[])) {
+            const nIt = normItem(it.name);
+            if (ni.startsWith(nIt+' ') || ni.startsWith(nIt+'(')) {
                 if (it.displayName) return it.displayName;
                 if (item.startsWith(cat.name+' ')) return item.slice(cat.name.length+1);
                 return item;
