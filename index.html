@@ -141,6 +141,11 @@
         .prod-btn:hover { background:var(--brand-lt); color:var(--brand); }
         .prod-btn:disabled { opacity:0.25; cursor:default; }
         .prod-btn.del:hover { color:#c0392b; background:#fdf0ec; }
+        .drag-handle { cursor:grab; color:#c9b99a; font-size:1.05rem; padding:0 3px; user-select:none; flex-shrink:0; line-height:1; }
+        .drag-handle:active { cursor:grabbing; }
+        .cat-block.drag-over { border:1.5px solid var(--brand); box-shadow:0 0 0 2px var(--brand-lt); }
+        .item-row.drag-over { border-top:2px solid var(--brand); }
+        .cat-block.dragging, .item-row.dragging { opacity:0.4; }
         .cat-add-row { margin-top:4px; }
 
         /* IMPORT */
@@ -965,23 +970,28 @@ function renderProdTree() {
     const el = document.getElementById('prod-tree');
     if (!tempProds.length) { el.innerHTML = '<div style="color:#bbb;font-size:0.84rem;text-align:center;padding:12px">尚無類別，請新增</div>'; return; }
     el.innerHTML = tempProds.map((cat,ci) => `
-        <div class="cat-block">
+        <div class="cat-block" draggable="true"
+             ondragstart="catDragStart(event,${ci})"
+             ondragover="catDragOver(event,${ci})"
+             ondrop="catDrop(event,${ci})"
+             ondragend="catDragEnd()">
             <div class="cat-row">
+                <span class="drag-handle" title="拖曳排序類別">⠿</span>
                 <span class="cat-label">類別</span>
                 <input class="cat-inp" value="${esc(cat.name)}" onchange="tempProds[${ci}].name=this.value.trim()" placeholder="商品類別名稱">
-                <button class="prod-btn" onclick="moveCat(${ci},-1)" ${ci===0?'disabled':''}>↑</button>
-                <button class="prod-btn" onclick="moveCat(${ci},1)" ${ci===tempProds.length-1?'disabled':''}>↓</button>
                 <button class="prod-btn del" onclick="delCat(${ci})">✕</button>
             </div>
             <div class="item-rows">
                 ${(cat.items||[]).map((it,ii)=>`
-                    <div class="item-row">
-                        <span style="color:#c9b99a;font-size:0.78rem;width:16px;flex-shrink:0">└</span>
+                    <div class="item-row" draggable="true"
+                         ondragstart="itemDragStart(event,${ci},${ii})"
+                         ondragover="itemDragOver(event,${ci},${ii})"
+                         ondrop="itemDrop(event,${ci},${ii})"
+                         ondragend="itemDragEnd()">
+                        <span class="drag-handle" title="拖曳排序">⠿</span>
                         <input class="item-inp" value="${esc(it.name)}" onchange="tempProds[${ci}].items[${ii}].name=this.value.trim()" placeholder="商品名稱">
                         <span class="disp-arr">→</span>
                         <input class="disp-inp" data-ci="${ci}" data-ii="${ii}" value="${esc(it.displayName||'')}" placeholder="工具顯示名稱（選填）">
-                        <button class="prod-btn" onclick="moveItem(${ci},${ii},-1)" ${ii===0?'disabled':''}>↑</button>
-                        <button class="prod-btn" onclick="moveItem(${ci},${ii},1)" ${ii===(cat.items||[]).length-1?'disabled':''}>↓</button>
                         <button class="prod-btn del" onclick="delItem(${ci},${ii})">✕</button>
                     </div>`).join('')}
             </div>
@@ -1000,13 +1010,65 @@ function addCat() {
     const name = inp.value.trim(); if (!name) return;
     tempProds.push({id:uid(),name,items:[]}); inp.value=''; renderProdTree();
 }
-function moveCat(i,dir) {
-    const j=i+dir; if(j<0||j>=tempProds.length) return;
-    [tempProds[i],tempProds[j]]=[tempProds[j],tempProds[i]]; renderProdTree();
-}
 function delCat(i) {
     if(!confirm(`刪除類別「${tempProds[i].name}」及其所有品名？`)) return;
     tempProds.splice(i,1); renderProdTree();
+}
+
+let dragSrc = null;
+
+function catDragStart(e, ci) {
+    dragSrc = { type:'cat', ci };
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', '');
+    const el = e.currentTarget;
+    setTimeout(() => el.classList.add('dragging'), 0);
+}
+function catDragOver(e, ci) {
+    if (!dragSrc || dragSrc.type !== 'cat' || dragSrc.ci === ci) return;
+    e.preventDefault(); e.dataTransfer.dropEffect = 'move';
+    document.querySelectorAll('.cat-block').forEach(el => el.classList.remove('drag-over'));
+    e.currentTarget.classList.add('drag-over');
+}
+function catDrop(e, ci) {
+    e.preventDefault(); e.stopPropagation();
+    if (!dragSrc || dragSrc.type !== 'cat' || dragSrc.ci === ci) { catCleanup(); return; }
+    syncProdInputs();
+    const [moved] = tempProds.splice(dragSrc.ci, 1);
+    tempProds.splice(ci, 0, moved);
+    dragSrc = null; renderProdTree();
+}
+function catDragEnd() { catCleanup(); dragSrc = null; }
+function catCleanup() {
+    document.querySelectorAll('.cat-block').forEach(el => el.classList.remove('drag-over','dragging'));
+}
+
+function itemDragStart(e, ci, ii) {
+    dragSrc = { type:'item', ci, ii };
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', '');
+    e.stopPropagation();
+    const el = e.currentTarget;
+    setTimeout(() => el.classList.add('dragging'), 0);
+}
+function itemDragOver(e, ci, ii) {
+    if (!dragSrc || dragSrc.type !== 'item' || dragSrc.ci !== ci || dragSrc.ii === ii) return;
+    e.preventDefault(); e.stopPropagation(); e.dataTransfer.dropEffect = 'move';
+    document.querySelectorAll('.item-row').forEach(el => el.classList.remove('drag-over'));
+    e.currentTarget.classList.add('drag-over');
+}
+function itemDrop(e, ci, ii) {
+    e.preventDefault(); e.stopPropagation();
+    if (!dragSrc || dragSrc.type !== 'item' || dragSrc.ci !== ci || dragSrc.ii === ii) { itemCleanup(); return; }
+    syncProdInputs();
+    const items = tempProds[ci].items;
+    const [moved] = items.splice(dragSrc.ii, 1);
+    items.splice(ii, 0, moved);
+    dragSrc = null; renderProdTree();
+}
+function itemDragEnd() { itemCleanup(); dragSrc = null; }
+function itemCleanup() {
+    document.querySelectorAll('.item-row').forEach(el => el.classList.remove('drag-over','dragging'));
 }
 function addItem(ci) {
     const inp = document.getElementById(`item-new-${ci}`);
@@ -1014,11 +1076,6 @@ function addItem(ci) {
     syncProdInputs();
     if (!tempProds[ci].items) tempProds[ci].items=[];
     tempProds[ci].items.push({id:uid(),name}); inp.value=''; renderProdTree();
-}
-function moveItem(ci,ii,dir) {
-    const items=tempProds[ci].items; const j=ii+dir;
-    if(j<0||j>=items.length) return;
-    [items[ii],items[j]]=[items[j],items[ii]]; renderProdTree();
 }
 function delItem(ci,ii) {
     if(!confirm(`刪除品名「${tempProds[ci].items[ii].name}」？`)) return;
