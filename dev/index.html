@@ -99,6 +99,15 @@
         .addon-row>td { padding:0 !important; background:#fdf9f5; border-bottom:1px solid var(--border); }
         .addon-list { padding:5px 12px 6px 22px; font-size:0.8rem; color:#7a5220; display:flex; flex-wrap:wrap; gap:6px; align-items:center; }
         .addon-item { display:inline-flex; align-items:center; gap:3px; background:#f5ebe0; border-radius:4px; padding:2px 7px; border:1px solid var(--border); }
+        .view-tabs { display:inline-flex; background:var(--brand-lt); border-radius:8px; padding:2px; gap:2px; }
+        .view-tab { border:none; background:transparent; padding:4px 14px; border-radius:6px; font-size:0.82rem; cursor:pointer; font-family:inherit; color:var(--brand); font-weight:500; }
+        .view-tab.active { background:#fff; color:var(--brand-dk); font-weight:700; box-shadow:0 1px 3px rgba(0,0,0,0.12); }
+        .prod-table { border-collapse:collapse; width:100%; max-width:420px; }
+        .prod-table th { font-size:0.78rem; color:#9B7850; font-weight:600; padding:5px 14px; border-bottom:1px solid var(--border); text-align:left; }
+        .prod-table th:last-child,.prod-qty { text-align:center; }
+        .prod-table td { padding:7px 14px; border-bottom:1px solid #F5EDE0; font-size:0.86rem; color:#3D2B1A; }
+        .prod-table tr:last-child td { border-bottom:none; }
+        .prod-qty { font-weight:700; font-size:1rem; color:var(--brand-dk); min-width:52px; }
         .pickup-sel { border:none; border-radius:8px; font-size:0.74rem; padding:2px 5px; cursor:pointer; font-family:inherit; outline:none; font-weight:600; }
         .dot-new { position:absolute; top:3px; left:3px; width:7px; height:7px; background:#c0392b; border-radius:50%; }
         .cal-dot { display:block; width:5px; height:5px; background:#c0392b; border-radius:50%; margin:1px auto 0; }
@@ -232,6 +241,10 @@
         <button class="btn-nav" onclick="changeMonth(1)">›</button>
         <button class="btn-today" onclick="goToday()">今天</button>
         <div class="h-right">
+            <div class="view-tabs">
+                <button class="view-tab active" id="tab-orders" onclick="setViewMode('orders')">訂單</button>
+                <button class="view-tab" id="tab-production" onclick="setViewMode('production')">製作</button>
+            </div>
             <button class="btn-g" onclick="openImport()">📥 匯入 Cyberbiz</button>
             <button class="btn-p" onclick="openAdd()">＋ 新增訂單</button>
             <span id="sync-ts" style="font-size:0.72rem;color:#c9b99a;white-space:nowrap"></span>
@@ -695,6 +708,13 @@ function clearAllData() {
 }
 
 let _autoSaveTimer, _pendingSave = false;
+let viewMode = 'orders';
+function setViewMode(mode) {
+    viewMode = mode;
+    document.getElementById('tab-orders').classList.toggle('active', mode === 'orders');
+    document.getElementById('tab-production').classList.toggle('active', mode === 'production');
+    render();
+}
 function scheduleAutoSave() {
     _pendingSave = true;
     clearTimeout(_autoSaveTimer);
@@ -804,6 +824,37 @@ function render() {
         const card = document.createElement('div');
         card.className = 'day-card'+(isToday?' today-card':'');
         card.dataset.date = ds;
+
+        if (viewMode === 'production') {
+            const mainDayOrders = dayOrders.filter(o => !isAddonItem(o.item));
+            if (!mainDayOrders.length) continue;
+            const itemMap = new Map();
+            for (const o of mainDayOrders) {
+                const disp = displayItem(o.item||'');
+                const po = productOrder(o.item||'');
+                if (itemMap.has(disp)) {
+                    itemMap.get(disp).qty += (+(o.quantity)||1);
+                } else {
+                    itemMap.set(disp, { disp, qty: +(o.quantity)||1, po });
+                }
+            }
+            const items = [...itemMap.values()].sort((a,b) => a.po !== b.po ? a.po - b.po : a.disp.localeCompare(b.disp, 'zh-TW'));
+            card.innerHTML = `
+                <div class="day-hdr">
+                    <span class="day-name">星期${DAY_ZH[day.getDay()]}</span>
+                    <span class="day-date-lbl">${day.getMonth()+1}月${day.getDate()}日</span>
+                    ${isToday ? '<span class="today-badge">今天</span>' : ''}
+                    <span class="order-count">${items.length} 種</span>
+                </div>
+                <div style="padding:4px 4px 10px">
+                    <table class="prod-table">
+                        <thead><tr><th>品項</th><th>數量</th></tr></thead>
+                        <tbody>${items.map(it=>`<tr><td>${esc(it.disp)}</td><td class="prod-qty">${it.qty}</td></tr>`).join('')}</tbody>
+                    </table>
+                </div>`;
+            wrap.appendChild(card);
+            continue;
+        }
 
         // Separate add-ons (其他 category) from main items
         const addonsByNum = {};
