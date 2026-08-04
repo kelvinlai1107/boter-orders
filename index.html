@@ -94,6 +94,11 @@
         .bdg-store { background:#e8f5e9; color:#2e7d32; }
         .bdg-other { background:#f3f0eb; color:#7a6248; }
         .badge-mod { display:inline-block; background:#b05a00; color:#fff; font-size:0.68rem; padding:1px 4px; border-radius:3px; margin-left:3px; vertical-align:middle; font-weight:700; }
+        .badge-addon { display:inline-block; cursor:pointer; font-size:0.68rem; background:#f0e8dc; color:var(--brand); border:1px solid var(--border); border-radius:3px; padding:1px 5px; margin-left:5px; white-space:nowrap; user-select:none; vertical-align:middle; }
+        .badge-addon:hover { background:var(--brand-lt); }
+        .addon-row>td { padding:0 !important; background:#fdf9f5; border-bottom:1px solid var(--border); }
+        .addon-list { padding:5px 12px 6px 22px; font-size:0.8rem; color:#7a5220; display:flex; flex-wrap:wrap; gap:6px; align-items:center; }
+        .addon-item { display:inline-flex; align-items:center; gap:3px; background:#f5ebe0; border-radius:4px; padding:2px 7px; border:1px solid var(--border); }
         .pickup-sel { border:none; border-radius:8px; font-size:0.74rem; padding:2px 5px; cursor:pointer; font-family:inherit; outline:none; font-weight:600; }
         .dot-new { position:absolute; top:3px; left:3px; width:7px; height:7px; background:#c0392b; border-radius:50%; }
         .cal-dot { display:block; width:5px; height:5px; background:#c0392b; border-radius:50%; margin:1px auto 0; }
@@ -800,7 +805,18 @@ function render() {
         card.className = 'day-card'+(isToday?' today-card':'');
         card.dataset.date = ds;
 
-        const rows = dayOrders.map(o => {
+        // Separate add-ons (其他 category) from main items
+        const addonsByNum = {};
+        const mainOrders = [];
+        for (const o of dayOrders) {
+            if (o.orderNumber && isAddonItem(o.item)) {
+                (addonsByNum[o.orderNumber] = addonsByNum[o.orderNumber]||[]).push(o);
+            } else {
+                mainOrders.push(o);
+            }
+        }
+        const shownAddonNums = new Set();
+        const rows = mainOrders.map(o => {
             const dm = o.deliveryMethod||o.timeSlot||'';
             const delivCls = dm.includes('宅')||dm.includes('冷凍') ? 'bdg bdg-home'
                            : dm.includes('門市')||dm.includes('取貨') ? 'bdg bdg-store'
@@ -810,9 +826,19 @@ function render() {
             const pbg = pv==='已自取'?'#e8f5e9':pv==='已出貨'?'#e3f2fd':'#f3f0eb';
             const pco = pv==='已自取'?'#2e7d32':pv==='已出貨'?'#1565c0':'#9B7850';
             const pOpts = ['未取貨','已自取','已出貨'].map(v=>`<option value="${v}"${v===pv?' selected':''}>${v}</option>`).join('');
+            const addons = o.orderNumber ? (addonsByNum[o.orderNumber]||[]) : [];
+            const hasAddons = addons.length > 0;
+            const arid = hasAddons ? 'adr_'+(o.orderNumber).replace(/\W/g,'_') : '';
+            const addonBadge = hasAddons ? `<span class="badge-addon" data-arid="${arid}" onclick="toggleAddons('${arid}')" title="點擊展開加購項目">加購 ▾</span>` : '';
+            let addonRow = '';
+            if (hasAddons && !shownAddonNums.has(o.orderNumber)) {
+                shownAddonNums.add(o.orderNumber);
+                const addonHtml = addons.map(a=>`<span class="addon-item">${esc(displayItem(a.item||''))} ×${a.quantity||1}<button class="btn-act" onclick="openEdit('${a.id}')" style="padding:1px 4px;font-size:0.73rem">✏</button><button class="btn-act" onclick="delOrder('${a.id}')" style="padding:1px 4px;font-size:0.73rem">🗑</button></span>`).join('');
+                addonRow = `<tr id="${arid}" class="addon-row" style="display:none"><td colspan="10" class="addon-cell"><div class="addon-list">加購項目：${addonHtml}</div></td></tr>`;
+            }
             return `<tr>
                 <td class="td-n" title="${esc(dm)}"><span class="${delivCls}">${esc(dm)}</span></td>
-                <td class="td-w">${esc(displayItem(o.item||''))}</td>
+                <td class="td-w">${esc(displayItem(o.item||''))}${addonBadge}</td>
                 <td class="td-n" style="text-align:center">${o.quantity||1}</td>
                 <td class="td-w">${esc(o.orderNotes||'')}</td>
                 <td class="td-w">${esc(o.shopNotes||'')}</td>
@@ -824,7 +850,7 @@ function render() {
                     <button class="btn-act" onclick="openEdit('${o.id}')">✏</button>
                     <button class="btn-act" onclick="delOrder('${o.id}')">🗑</button>
                 </div></td>
-            </tr>`;
+            </tr>${addonRow}`;
         }).join('');
 
         card.innerHTML = `
@@ -837,8 +863,8 @@ function render() {
             ${dayOrders.length===0 ? '<div class="no-orders">— 無訂單 —</div>'
             : `<table class="sched-table">
                 <colgroup>
-                    <col style="width:118px"><col style="width:130px"><col style="width:36px">
-                    <col style="width:150px"><col style="width:120px">
+                    <col style="width:118px"><col style="width:168px"><col style="width:36px">
+                    <col style="width:150px"><col style="width:110px">
                     <col style="width:70px"><col style="width:103px">
                     <col style="width:68px"><col style="width:88px"><col style="width:50px">
                 </colgroup>
@@ -886,6 +912,29 @@ function displayItem(item) {
         if (item.startsWith(cat.name+' ')) return item.slice(cat.name.length+1);
     }
     return item;
+}
+function isAddonItem(item) {
+    if (!item) return false;
+    const ni = normItem(item);
+    const otherCat = getProducts().find(c => normItem(c.name) === '其他');
+    if (!otherCat) return false;
+    const nCat = normItem(otherCat.name);
+    if (ni === nCat || ni.startsWith(nCat+' ')) return true;
+    for (const it of (otherCat.items||[])) {
+        const nIt = normItem(it.name);
+        if (ni === nIt || ni === normItem(nCat+' '+nIt) ||
+            ni.startsWith(nIt+' ') || ni.startsWith(nIt+'(')) return true;
+    }
+    return false;
+}
+function toggleAddons(id) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const showing = el.style.display !== 'none';
+    el.style.display = showing ? 'none' : '';
+    document.querySelectorAll(`[data-arid="${id}"]`).forEach(b => {
+        b.textContent = showing ? '加購 ▾' : '加購 ▴';
+    });
 }
 
 /* ── ORDER FORM ── */
