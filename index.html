@@ -104,10 +104,11 @@
         .view-tab.active { background:#fff; color:var(--brand-dk); font-weight:700; box-shadow:0 1px 3px rgba(0,0,0,0.12); }
         .prod-table { border-collapse:collapse; width:100%; max-width:420px; }
         .prod-table th { font-size:0.78rem; color:#9B7850; font-weight:600; padding:5px 14px; border-bottom:1px solid var(--border); text-align:left; }
-        .prod-table th:last-child,.prod-qty { text-align:center; }
+        .prod-table th,.prod-qty,.prod-total { text-align:center; }
         .prod-table td { padding:7px 14px; border-bottom:1px solid #F5EDE0; font-size:0.86rem; color:#3D2B1A; }
         .prod-table tr:last-child td { border-bottom:none; }
         .prod-qty { font-weight:700; font-size:1rem; color:var(--brand-dk); min-width:52px; }
+        .prod-total { font-weight:800; font-size:1.1rem; color:#8B4513; background:#FDF0E0; border-left:2px solid #E8C89A; vertical-align:middle; min-width:64px; }
         .pickup-sel { border:none; border-radius:8px; font-size:0.74rem; padding:2px 5px; cursor:pointer; font-family:inherit; outline:none; font-weight:600; }
         .dot-new { position:absolute; top:3px; left:3px; width:7px; height:7px; background:#c0392b; border-radius:50%; }
         .cal-dot { display:block; width:5px; height:5px; background:#c0392b; border-radius:50%; margin:1px auto 0; }
@@ -838,18 +839,50 @@ function render() {
                     itemMap.set(disp, { disp, qty: +(o.quantity)||1, po });
                 }
             }
-            const items = [...itemMap.values()].sort((a,b) => a.po !== b.po ? a.po - b.po : a.disp.localeCompare(b.disp, 'zh-TW'));
+            const sorted = [...itemMap.values()].sort((a,b) => a.po !== b.po ? a.po - b.po : a.disp.localeCompare(b.disp, 'zh-TW'));
+            // Group items whose display name ends with -禮物 or -皇冠 by their base name
+            const FLAG_RE = /[-－‐–—\s](?:禮物|皇冠)$/;
+            const groupMap = new Map(); // base -> variants[]
+            for (const it of sorted) {
+                const m = it.disp.match(FLAG_RE);
+                if (m) {
+                    const base = it.disp.slice(0, -m[0].length);
+                    if (!groupMap.has(base)) groupMap.set(base, []);
+                    groupMap.get(base).push(it);
+                }
+            }
+            // Build rows preserving sorted order
+            const processedBases = new Set();
+            let rowsHtml = '';
+            for (const it of sorted) {
+                const m = it.disp.match(FLAG_RE);
+                if (m) {
+                    const base = it.disp.slice(0, -m[0].length);
+                    if (processedBases.has(base)) continue;
+                    processedBases.add(base);
+                    const variants = groupMap.get(base);
+                    const total = variants.reduce((s,v)=>s+v.qty, 0);
+                    variants.forEach((v, i) => {
+                        if (i === 0) {
+                            rowsHtml += `<tr><td>${esc(v.disp)}</td><td class="prod-qty">${v.qty}</td><td class="prod-total" rowspan="${variants.length}">${total}</td></tr>`;
+                        } else {
+                            rowsHtml += `<tr><td>${esc(v.disp)}</td><td class="prod-qty">${v.qty}</td></tr>`;
+                        }
+                    });
+                } else {
+                    rowsHtml += `<tr><td>${esc(it.disp)}</td><td></td><td class="prod-total">${it.qty}</td></tr>`;
+                }
+            }
             card.innerHTML = `
                 <div class="day-hdr">
                     <span class="day-name">星期${DAY_ZH[day.getDay()]}</span>
                     <span class="day-date-lbl">${day.getMonth()+1}月${day.getDate()}日</span>
                     ${isToday ? '<span class="today-badge">今天</span>' : ''}
-                    <span class="order-count">${items.length} 種</span>
                 </div>
                 <div style="padding:4px 4px 10px">
                     <table class="prod-table">
-                        <thead><tr><th>品項</th><th>數量</th></tr></thead>
-                        <tbody>${items.map(it=>`<tr><td>${esc(it.disp)}</td><td class="prod-qty">${it.qty}</td></tr>`).join('')}</tbody>
+                        <thead><tr><th>品項</th><th>小計</th><th>合計</th></tr></thead>
+                        <tbody>${rowsHtml}</tbody>
                     </table>
                 </div>`;
             wrap.appendChild(card);
