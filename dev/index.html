@@ -173,6 +173,7 @@
         .preview-table { width:100%; border-collapse:collapse; font-size:0.79rem; }
         .preview-table th { background:#FDFAF7; padding:5px 8px; text-align:left; position:sticky; top:0; border-bottom:1px solid var(--border); white-space:nowrap; color:#9B7850; }
         .preview-table td { padding:5px 8px; border-bottom:1px solid #F5EDE0; max-width:160px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        .row-date-chg td:first-child { max-width:none; }
         .row-ok  td:first-child { border-left:3px solid #5a7a2e; }
         .row-warn td:first-child { border-left:3px solid #c07820; }
         .imp-sum { background:#F0EBE0; border-radius:8px; padding:9px 13px; font-size:0.84rem; color:var(--brand-dk); }
@@ -400,19 +401,6 @@
             <button class="btn-p" id="btn-apply-mapping" style="display:none" onclick="applyMappings()">套用並編輯品項清單</button>
             <button class="btn-p" id="btn-skip-mapping" style="display:none" onclick="doImport()">略過，直接匯入</button>
             <button class="btn-g" id="btn-do-import" style="display:none" onclick="doImport()">確認匯入</button>
-        </div>
-    </div>
-</div>
-
-<!-- DATE CHANGE CONFIRMATION MODAL -->
-<div class="overlay" id="date-chg-overlay">
-    <div class="modal">
-        <div class="modal-title">📅 配送日期異動確認</div>
-        <div style="font-size:0.85rem;color:#7a5c3a;margin-bottom:10px">以下訂單的指定配送日期與 Cyberbiz 最新資料不符，是否更新系統內的配送日期？</div>
-        <div id="date-chg-list" style="max-height:320px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;"></div>
-        <div class="mf" style="margin-top:14px">
-            <button class="btn-cx" onclick="closeOverlay('date-chg-overlay')">略過，不更新</button>
-            <button class="btn-g" onclick="applyDateChanges()">確認更新</button>
         </div>
     </div>
 </div>
@@ -1542,7 +1530,6 @@ function showPreview() {
         }
     }
 }
-let pendingDateChgMap = null;
 function doImport() {
     // Build existing date map
     const existingDateByNum = {};
@@ -1571,12 +1558,24 @@ function doImport() {
             orderNotes:r.orderNotes,shopNotes:''});
         added++;
     });
-    // 3. 收集日期異動（既有訂單，新舊日期不同）
-    const dateChgMap = new Map(); // orderNum → { oldDate, newDate }
+    // 3. 直接套用日期異動（既有訂單，新舊日期不同）
+    const dateChgNums = new Set();
     for (const r of parsedRows.filter(r=>r.valid&&!r.cancelled)) {
         if (r.orderNumber && existingDateByNum[r.orderNumber] !== undefined &&
-            existingDateByNum[r.orderNumber] !== r.date && !dateChgMap.has(r.orderNumber)) {
-            dateChgMap.set(r.orderNumber, { oldDate: existingDateByNum[r.orderNumber], newDate: r.date });
+            existingDateByNum[r.orderNumber] !== r.date) dateChgNums.add(r.orderNumber);
+    }
+    let dateUpdated = 0;
+    if (dateChgNums.size > 0) {
+        const newDateByNum = {};
+        for (const r of parsedRows.filter(r=>r.valid&&!r.cancelled)) {
+            if (dateChgNums.has(r.orderNumber)) newDateByNum[r.orderNumber] = r.date;
+        }
+        for (const o of orders) {
+            if (o.orderNumber && newDateByNum[o.orderNumber]) {
+                o.date = newDateByNum[o.orderNumber];
+                o.modified = true;
+                dateUpdated++;
+            }
         }
     }
     localSave();
@@ -1584,39 +1583,9 @@ function doImport() {
     if (first) { const d=new Date(first+'T00:00:00'); currentMonth=new Date(d.getFullYear(),d.getMonth(),1); }
     render(); renderCalGrid();
     if (lastImportFile) uploadExcelToSP(lastImportFile);
-    const msg = [added?`匯入 ${added} 筆`:'', deleted?`刪除 ${deleted} 筆已取消訂單`:''].filter(Boolean).join('　');
-    resetImport();
-    if (dateChgMap.size > 0) {
-        pendingDateChgMap = dateChgMap;
-        const rows = [...dateChgMap.entries()].map(([num, {oldDate, newDate}])=>
-            `<div style="display:flex;align-items:center;gap:10px;padding:9px 14px;border-bottom:1px solid var(--border);font-size:0.85rem">
-                <span style="font-weight:600;min-width:130px">${esc(num)}</span>
-                <span style="color:#999">${esc(oldDate)}</span>
-                <span style="color:#999">→</span>
-                <span style="color:#bf360c;font-weight:700">${esc(newDate)}</span>
-             </div>`).join('');
-        document.getElementById('date-chg-list').innerHTML = rows;
-        openOverlay('date-chg-overlay');
-        if (msg) toast(msg, 'ok');
-    } else {
-        toast(msg||'無變更 ✓', 'ok');
-    }
+    const msg = [added?`匯入 ${added} 筆`:'', deleted?`刪除 ${deleted} 筆已取消訂單`:'', dateUpdated?`更新 ${dateChgNums.size} 筆配送日期`:''].filter(Boolean).join('　');
+    resetImport(); toast(msg||'無變更 ✓','ok');
     scheduleAutoSave();
-}
-function applyDateChanges() {
-    if (!pendingDateChgMap) return;
-    let updated = 0;
-    for (const o of orders) {
-        if (o.orderNumber && pendingDateChgMap.has(o.orderNumber)) {
-            o.date = pendingDateChgMap.get(o.orderNumber).newDate;
-            o.modified = true;
-            updated++;
-        }
-    }
-    pendingDateChgMap = null;
-    localSave(); render(); scheduleAutoSave();
-    closeOverlay('date-chg-overlay');
-    toast(`已更新 ${updated} 筆訂單的配送日期 ✓`, 'ok');
 }
 async function uploadExcelToSP(file) {
     if (!file||!cfg.siteUrl) return;
