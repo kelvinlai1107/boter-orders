@@ -815,8 +815,9 @@ function render() {
 
     for (let dd = 1; dd <= dim; dd++) {
         const day = new Date(y, m, dd);
-        if (day.getDay() === 0) continue;
         const ds = fmtDate(day);
+        // 週日只有在有訂單時才顯示
+        if (day.getDay() === 0 && !orders.some(o=>o.date===ds)) continue;
         const dayOrders = orders.filter(o=>o.date===ds).sort((a,b)=>{
             const oa=productOrder(a.item), ob=productOrder(b.item);
             if (oa!==ob) return oa-ob;
