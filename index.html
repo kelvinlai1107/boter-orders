@@ -1485,17 +1485,38 @@ function showPreview() {
         +(dateChgNums.size?`　📅 <strong>${dateChgNums.size}</strong> 筆配送日期異動`:'')
         +(skipRows.length?`　⚠ 略過 <strong>${skipRows.length}</strong> 筆（缺出貨日期）`:'')
         +(dupRows.length?`　⚠ <strong>${dupRows.length}</strong> 筆已存在（略過）`:'');
+    // 分組排序：日期異動 → 新訂單 → 已存在（略過）→ 已取消 → 無效
+    function rowSortKey(r) {
+        if (!r.cancelled && r.orderNumber && dateChgNums.has(r.orderNumber)) return 0;
+        if (r.valid && !r.cancelled && !dupNums.has(r.orderNumber) && !dateChgNums.has(r.orderNumber)) return 1;
+        if (!r.cancelled && r.orderNumber && dupNums.has(r.orderNumber)) return 2;
+        if (r.cancelled && r.orderNumber && toDeleteNums.has(r.orderNumber)) return 3;
+        if (r.cancelled) return 4;
+        return 5;
+    }
+    const sortedForDisplay = [...parsedRows].sort((a,b) => rowSortKey(a)-rowSortKey(b));
+    let lastGroup = -1;
+    const GROUP_LABELS = {
+        0: `<tr><td colspan="6" style="background:#FFF0E0;color:#bf360c;font-weight:700;font-size:0.78rem;padding:6px 12px;letter-spacing:0.03em">📅 配送日期異動</td></tr>`,
+        1: `<tr><td colspan="6" style="background:#F2FBF2;color:#2e7d32;font-weight:700;font-size:0.78rem;padding:6px 12px;letter-spacing:0.03em">✅ 新訂單（將匯入）</td></tr>`,
+        2: `<tr><td colspan="6" style="background:#F5F5F5;color:#999;font-weight:700;font-size:0.78rem;padding:6px 12px;letter-spacing:0.03em">⊘ 已存在（略過）</td></tr>`,
+        3: `<tr><td colspan="6" style="background:#FFF0F0;color:#c62828;font-weight:700;font-size:0.78rem;padding:6px 12px;letter-spacing:0.03em">🗑 已取消（將刪除）</td></tr>`,
+        4: `<tr><td colspan="6" style="background:#F5F5F5;color:#999;font-weight:700;font-size:0.78rem;padding:6px 12px;letter-spacing:0.03em">⊘ 已取消（系統無此訂單，略過）</td></tr>`,
+        5: `<tr><td colspan="6" style="background:#FFFBF0;color:#c07820;font-weight:700;font-size:0.78rem;padding:6px 12px;letter-spacing:0.03em">⚠ 略過（缺出貨日期）</td></tr>`,
+    };
     document.getElementById('preview-wrap').innerHTML=`
         <table class="preview-table">
             <thead><tr><th>出貨日</th><th>訂單編號</th><th>品項</th><th>量</th><th>收件人</th><th>配送方式</th></tr></thead>
-            <tbody>${parsedRows.map(r=>{
+            <tbody>${sortedForDisplay.map(r=>{
                 const isDup        = !r.cancelled&&r.orderNumber&&dupNums.has(r.orderNumber);
                 const isDateChg    = !r.cancelled&&r.orderNumber&&dateChgNums.has(r.orderNumber);
                 const isDeleting   = r.cancelled&&r.orderNumber&&toDeleteNums.has(r.orderNumber);
                 const isCancelSkip = r.cancelled&&r.orderNumber&&!toDeleteNums.has(r.orderNumber);
-                const rowCls = isDeleting?'row-cancel':isCancelSkip?'row-dup':isDateChg?'row-date-chg':isDup?'row-dup':r.valid?'row-ok':'row-warn';
+                const rowCls = isDateChg?'row-date-chg':isDeleting?'row-cancel':isCancelSkip?'row-dup':isDup?'row-dup':r.valid?'row-ok':'row-warn';
                 const oldDate = isDateChg ? existingDateByNum[r.orderNumber] : '';
-                return `<tr class="${rowCls}">
+                const grp = rowSortKey(r);
+                const hdr = grp !== lastGroup ? (lastGroup=grp, GROUP_LABELS[grp]||'') : '';
+                return `${hdr}<tr class="${rowCls}">
                     <td>${isDateChg?`<span style="text-decoration:line-through;color:#aaa">${esc(oldDate)}</span> → <strong>${esc(r.date)}</strong>`:r.date||'<span style="color:#c07820">缺日期</span>'}</td>
                     <td>${esc(r.orderNumber)}
                         ${isDeleting?' <span class="badge-cancel">已取消→將刪除</span>':''}
