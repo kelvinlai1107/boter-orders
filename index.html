@@ -109,6 +109,8 @@
         .prod-table tr:last-child td { border-bottom:none; }
         .prod-qty { font-weight:700; font-size:1rem; color:var(--brand-dk); min-width:52px; }
         .prod-total { font-weight:800; font-size:1.1rem; color:#8B4513; background:#FDF0E0; border-left:1px solid var(--border); border-bottom:1px solid var(--border) !important; vertical-align:middle; min-width:64px; }
+        .badge-date-chg { background:#ffe0b2; color:#bf360c; font-size:0.7rem; padding:1px 6px; border-radius:4px; white-space:nowrap; margin-left:4px; }
+        .row-date-chg td { background:#FFF5EC; }
         .pickup-sel { border:none; border-radius:8px; font-size:0.74rem; padding:2px 5px; cursor:pointer; font-family:inherit; outline:none; font-weight:600; }
         .dot-new { position:absolute; top:3px; left:3px; width:7px; height:7px; background:#c0392b; border-radius:50%; }
         .cal-dot { display:block; width:5px; height:5px; background:#c0392b; border-radius:50%; margin:1px auto 0; }
@@ -398,6 +400,19 @@
             <button class="btn-p" id="btn-apply-mapping" style="display:none" onclick="applyMappings()">套用並編輯品項清單</button>
             <button class="btn-p" id="btn-skip-mapping" style="display:none" onclick="doImport()">略過，直接匯入</button>
             <button class="btn-g" id="btn-do-import" style="display:none" onclick="doImport()">確認匯入</button>
+        </div>
+    </div>
+</div>
+
+<!-- DATE CHANGE CONFIRMATION MODAL -->
+<div class="overlay" id="date-chg-overlay">
+    <div class="modal">
+        <div class="modal-title">📅 配送日期異動確認</div>
+        <div style="font-size:0.85rem;color:#7a5c3a;margin-bottom:10px">以下訂單的指定配送日期與 Cyberbiz 最新資料不符，是否更新系統內的配送日期？</div>
+        <div id="date-chg-list" style="max-height:320px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;"></div>
+        <div class="mf" style="margin-top:14px">
+            <button class="btn-cx" onclick="closeOverlay('date-chg-overlay')">略過，不更新</button>
+            <button class="btn-g" onclick="applyDateChanges()">確認更新</button>
         </div>
     </div>
 </div>
@@ -1443,34 +1458,50 @@ async function handleFile(file) {
     } catch(e) { toast('解析失敗：'+e.message,'err'); console.error(e); }
 }
 function showPreview() {
+    // Build existing date map (orderNumber → date)
+    const existingDateByNum = {};
+    for (const o of orders) {
+        if (o.orderNumber && !existingDateByNum[o.orderNumber]) existingDateByNum[o.orderNumber] = o.date;
+    }
     const validRows    = parsedRows.filter(r=>r.valid&&!r.cancelled);
     const cancelRows   = parsedRows.filter(r=>r.cancelled&&r.orderNumber);
     const skipRows     = parsedRows.filter(r=>!r.valid&&!r.cancelled);
-    const dupRows      = validRows.filter(r=>r.orderNumber&&orders.some(o=>o.orderNumber&&o.orderNumber===r.orderNumber));
+    // dateChangedRows: exist in system AND date differs
+    const dateChgNums  = new Set();
+    for (const r of validRows) {
+        if (r.orderNumber && existingDateByNum[r.orderNumber] !== undefined && existingDateByNum[r.orderNumber] !== r.date)
+            dateChgNums.add(r.orderNumber);
+    }
+    // dupRows: exist in system AND same date (truly skip)
+    const dupRows      = validRows.filter(r=>r.orderNumber&&existingDateByNum[r.orderNumber]!==undefined&&!dateChgNums.has(r.orderNumber));
     const toDeleteRows = cancelRows.filter(r=>orders.some(o=>o.orderNumber&&o.orderNumber===r.orderNumber));
     const dupNums      = new Set(dupRows.map(r=>r.orderNumber));
     const toDeleteNums = new Set(toDeleteRows.map(r=>r.orderNumber));
     const sum=document.getElementById('import-summary');
-    const hasWarn=skipRows.length||dupRows.length;
+    const hasWarn=skipRows.length||dupRows.length||dateChgNums.size;
     sum.className='imp-sum'+(hasWarn?' warn':'');
-    sum.innerHTML=`共 <strong>${parsedRows.length}</strong> 筆　可匯入 <strong>${validRows.length-dupRows.length}</strong> 筆`
+    sum.innerHTML=`共 <strong>${parsedRows.length}</strong> 筆　可匯入 <strong>${validRows.length-dupRows.length-dateChgNums.size}</strong> 筆`
         +(toDeleteRows.length?`　🗑 <strong>${toDeleteRows.length}</strong> 筆已取消（將刪除）`:'')
+        +(dateChgNums.size?`　📅 <strong>${dateChgNums.size}</strong> 筆配送日期異動`:'')
         +(skipRows.length?`　⚠ 略過 <strong>${skipRows.length}</strong> 筆（缺出貨日期）`:'')
         +(dupRows.length?`　⚠ <strong>${dupRows.length}</strong> 筆已存在（略過）`:'');
     document.getElementById('preview-wrap').innerHTML=`
         <table class="preview-table">
             <thead><tr><th>出貨日</th><th>訂單編號</th><th>品項</th><th>量</th><th>收件人</th><th>配送方式</th></tr></thead>
             <tbody>${parsedRows.map(r=>{
-                const isDup      = !r.cancelled&&r.orderNumber&&dupNums.has(r.orderNumber);
-                const isDeleting = r.cancelled&&r.orderNumber&&toDeleteNums.has(r.orderNumber);
+                const isDup        = !r.cancelled&&r.orderNumber&&dupNums.has(r.orderNumber);
+                const isDateChg    = !r.cancelled&&r.orderNumber&&dateChgNums.has(r.orderNumber);
+                const isDeleting   = r.cancelled&&r.orderNumber&&toDeleteNums.has(r.orderNumber);
                 const isCancelSkip = r.cancelled&&r.orderNumber&&!toDeleteNums.has(r.orderNumber);
-                const rowCls = isDeleting?'row-cancel':isCancelSkip?'row-dup':isDup?'row-dup':r.valid?'row-ok':'row-warn';
+                const rowCls = isDeleting?'row-cancel':isCancelSkip?'row-dup':isDateChg?'row-date-chg':isDup?'row-dup':r.valid?'row-ok':'row-warn';
+                const oldDate = isDateChg ? existingDateByNum[r.orderNumber] : '';
                 return `<tr class="${rowCls}">
-                    <td>${r.date||'<span style="color:#c07820">缺日期</span>'}</td>
+                    <td>${isDateChg?`<span style="text-decoration:line-through;color:#aaa">${esc(oldDate)}</span> → <strong>${esc(r.date)}</strong>`:r.date||'<span style="color:#c07820">缺日期</span>'}</td>
                     <td>${esc(r.orderNumber)}
                         ${isDeleting?' <span class="badge-cancel">已取消→將刪除</span>':''}
                         ${isCancelSkip?' <span style="color:#bbb;font-size:0.72rem">已取消</span>':''}
                         ${isDup?' <span style="color:#bbb;font-size:0.72rem">已存在</span>':''}
+                        ${isDateChg?' <span class="badge-date-chg">日期異動</span>':''}
                     </td>
                     <td>${esc(r.item)}</td>
                     <td>${r.quantity||''}</td><td>${esc(r.customer)}</td><td>${esc(r.deliveryMethod)}</td>
@@ -1480,7 +1511,7 @@ function showPreview() {
         </table>`;
     document.getElementById('import-step1').style.display='none';
     document.getElementById('import-step2').style.display='';
-    if (validRows.length-dupRows.length>0||toDeleteRows.length>0) {
+    if (validRows.length-dupRows.length-dateChgNums.size>0||toDeleteRows.length>0||dateChgNums.size>0) {
         const unmatched = findUnmappedItems();
         if (unmatched.length) {
             document.getElementById('btn-show-mapping').style.display='';
@@ -1490,7 +1521,13 @@ function showPreview() {
         }
     }
 }
+let pendingDateChgMap = null;
 function doImport() {
+    // Build existing date map
+    const existingDateByNum = {};
+    for (const o of orders) {
+        if (o.orderNumber && !existingDateByNum[o.orderNumber]) existingDateByNum[o.orderNumber] = o.date;
+    }
     const existing = new Set(orders.map(o=>o.orderNumber).filter(Boolean));
     // 1. 刪除已取消訂單
     const cancelNums = new Set(
@@ -1502,7 +1539,7 @@ function doImport() {
         orders = orders.filter(o=>!o.orderNumber||!cancelNums.has(o.orderNumber));
         deleted = before - orders.length;
     }
-    // 2. 匯入新訂單
+    // 2. 匯入新訂單（跳過已存在，包含日期異動的訂單）
     let added = 0;
     parsedRows.filter(r=>r.valid&&!r.cancelled).forEach(r=>{
         if (r.orderNumber&&existing.has(r.orderNumber)) return;
@@ -1513,14 +1550,52 @@ function doImport() {
             orderNotes:r.orderNotes,shopNotes:''});
         added++;
     });
+    // 3. 收集日期異動（既有訂單，新舊日期不同）
+    const dateChgMap = new Map(); // orderNum → { oldDate, newDate }
+    for (const r of parsedRows.filter(r=>r.valid&&!r.cancelled)) {
+        if (r.orderNumber && existingDateByNum[r.orderNumber] !== undefined &&
+            existingDateByNum[r.orderNumber] !== r.date && !dateChgMap.has(r.orderNumber)) {
+            dateChgMap.set(r.orderNumber, { oldDate: existingDateByNum[r.orderNumber], newDate: r.date });
+        }
+    }
     localSave();
     const first = parsedRows.find(r=>r.valid&&!r.cancelled)?.date;
     if (first) { const d=new Date(first+'T00:00:00'); currentMonth=new Date(d.getFullYear(),d.getMonth(),1); }
     render(); renderCalGrid();
     if (lastImportFile) uploadExcelToSP(lastImportFile);
     const msg = [added?`匯入 ${added} 筆`:'', deleted?`刪除 ${deleted} 筆已取消訂單`:''].filter(Boolean).join('　');
-    resetImport(); toast(msg||'無變更 ✓','ok');
+    resetImport();
+    if (dateChgMap.size > 0) {
+        pendingDateChgMap = dateChgMap;
+        const rows = [...dateChgMap.entries()].map(([num, {oldDate, newDate}])=>
+            `<div style="display:flex;align-items:center;gap:10px;padding:9px 14px;border-bottom:1px solid var(--border);font-size:0.85rem">
+                <span style="font-weight:600;min-width:130px">${esc(num)}</span>
+                <span style="color:#999">${esc(oldDate)}</span>
+                <span style="color:#999">→</span>
+                <span style="color:#bf360c;font-weight:700">${esc(newDate)}</span>
+             </div>`).join('');
+        document.getElementById('date-chg-list').innerHTML = rows;
+        openOverlay('date-chg-overlay');
+        if (msg) toast(msg, 'ok');
+    } else {
+        toast(msg||'無變更 ✓', 'ok');
+    }
     scheduleAutoSave();
+}
+function applyDateChanges() {
+    if (!pendingDateChgMap) return;
+    let updated = 0;
+    for (const o of orders) {
+        if (o.orderNumber && pendingDateChgMap.has(o.orderNumber)) {
+            o.date = pendingDateChgMap.get(o.orderNumber).newDate;
+            o.modified = true;
+            updated++;
+        }
+    }
+    pendingDateChgMap = null;
+    localSave(); render(); scheduleAutoSave();
+    closeOverlay('date-chg-overlay');
+    toast(`已更新 ${updated} 筆訂單的配送日期 ✓`, 'ok');
 }
 async function uploadExcelToSP(file) {
     if (!file||!cfg.siteUrl) return;
