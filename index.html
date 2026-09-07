@@ -109,6 +109,8 @@
         .prod-table tr:last-child td { border-bottom:none; }
         .prod-qty { font-weight:700; font-size:1rem; color:var(--brand-dk); min-width:52px; }
         .prod-total { font-weight:800; font-size:1.1rem; color:#8B4513; background:#FDF0E0; border-left:1px solid var(--border); border-bottom:1px solid var(--border) !important; vertical-align:middle; min-width:64px; }
+        .badge-date-chg { background:#ffe0b2; color:#bf360c; font-size:0.7rem; padding:1px 6px; border-radius:4px; white-space:nowrap; margin-left:4px; }
+        .row-date-chg td { background:#FFF5EC; }
         .pickup-sel { border:none; border-radius:8px; font-size:0.74rem; padding:2px 5px; cursor:pointer; font-family:inherit; outline:none; font-weight:600; }
         .dot-new { position:absolute; top:3px; left:3px; width:7px; height:7px; background:#c0392b; border-radius:50%; }
         .cal-dot { display:block; width:5px; height:5px; background:#c0392b; border-radius:50%; margin:1px auto 0; }
@@ -171,6 +173,7 @@
         .preview-table { width:100%; border-collapse:collapse; font-size:0.79rem; }
         .preview-table th { background:#FDFAF7; padding:5px 8px; text-align:left; position:sticky; top:0; border-bottom:1px solid var(--border); white-space:nowrap; color:#9B7850; }
         .preview-table td { padding:5px 8px; border-bottom:1px solid #F5EDE0; max-width:160px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        .row-date-chg td:first-child { max-width:none; }
         .row-ok  td:first-child { border-left:3px solid #5a7a2e; }
         .row-warn td:first-child { border-left:3px solid #c07820; }
         .imp-sum { background:#F0EBE0; border-radius:8px; padding:9px 13px; font-size:0.84rem; color:var(--brand-dk); }
@@ -812,8 +815,9 @@ function render() {
 
     for (let dd = 1; dd <= dim; dd++) {
         const day = new Date(y, m, dd);
-        if (day.getDay() === 0) continue;
         const ds = fmtDate(day);
+        // 週日只有在有訂單時才顯示
+        if (day.getDay() === 0 && !orders.some(o=>o.date===ds)) continue;
         const dayOrders = orders.filter(o=>o.date===ds).sort((a,b)=>{
             const oa=productOrder(a.item), ob=productOrder(b.item);
             if (oa!==ob) return oa-ob;
@@ -1443,34 +1447,71 @@ async function handleFile(file) {
     } catch(e) { toast('解析失敗：'+e.message,'err'); console.error(e); }
 }
 function showPreview() {
+    // Build existing date map (orderNumber → date)
+    const existingDateByNum = {};
+    for (const o of orders) {
+        if (o.orderNumber && !existingDateByNum[o.orderNumber]) existingDateByNum[o.orderNumber] = o.date;
+    }
     const validRows    = parsedRows.filter(r=>r.valid&&!r.cancelled);
     const cancelRows   = parsedRows.filter(r=>r.cancelled&&r.orderNumber);
     const skipRows     = parsedRows.filter(r=>!r.valid&&!r.cancelled);
-    const dupRows      = validRows.filter(r=>r.orderNumber&&orders.some(o=>o.orderNumber&&o.orderNumber===r.orderNumber));
+    // dateChangedRows: exist in system AND date differs
+    const dateChgNums  = new Set();
+    for (const r of validRows) {
+        if (r.orderNumber && existingDateByNum[r.orderNumber] !== undefined && existingDateByNum[r.orderNumber] !== r.date)
+            dateChgNums.add(r.orderNumber);
+    }
+    // dupRows: exist in system AND same date (truly skip)
+    const dupRows      = validRows.filter(r=>r.orderNumber&&existingDateByNum[r.orderNumber]!==undefined&&!dateChgNums.has(r.orderNumber));
     const toDeleteRows = cancelRows.filter(r=>orders.some(o=>o.orderNumber&&o.orderNumber===r.orderNumber));
     const dupNums      = new Set(dupRows.map(r=>r.orderNumber));
     const toDeleteNums = new Set(toDeleteRows.map(r=>r.orderNumber));
     const sum=document.getElementById('import-summary');
-    const hasWarn=skipRows.length||dupRows.length;
+    const hasWarn=skipRows.length||dupRows.length||dateChgNums.size;
     sum.className='imp-sum'+(hasWarn?' warn':'');
-    sum.innerHTML=`共 <strong>${parsedRows.length}</strong> 筆　可匯入 <strong>${validRows.length-dupRows.length}</strong> 筆`
+    sum.innerHTML=`共 <strong>${parsedRows.length}</strong> 筆　可匯入 <strong>${validRows.length-dupRows.length-dateChgNums.size}</strong> 筆`
         +(toDeleteRows.length?`　🗑 <strong>${toDeleteRows.length}</strong> 筆已取消（將刪除）`:'')
+        +(dateChgNums.size?`　📅 <strong>${dateChgNums.size}</strong> 筆配送日期異動`:'')
         +(skipRows.length?`　⚠ 略過 <strong>${skipRows.length}</strong> 筆（缺出貨日期）`:'')
         +(dupRows.length?`　⚠ <strong>${dupRows.length}</strong> 筆已存在（略過）`:'');
+    // 分組排序：日期異動 → 新訂單 → 已存在（略過）→ 已取消 → 無效
+    function rowSortKey(r) {
+        if (!r.cancelled && r.orderNumber && dateChgNums.has(r.orderNumber)) return 0;
+        if (r.valid && !r.cancelled && !dupNums.has(r.orderNumber) && !dateChgNums.has(r.orderNumber)) return 1;
+        if (!r.cancelled && r.orderNumber && dupNums.has(r.orderNumber)) return 2;
+        if (r.cancelled && r.orderNumber && toDeleteNums.has(r.orderNumber)) return 3;
+        if (r.cancelled) return 4;
+        return 5;
+    }
+    const sortedForDisplay = [...parsedRows].sort((a,b) => rowSortKey(a)-rowSortKey(b));
+    let lastGroup = -1;
+    const GROUP_LABELS = {
+        0: `<tr><td colspan="6" style="background:#FFF0E0;color:#bf360c;font-weight:700;font-size:0.78rem;padding:6px 12px;letter-spacing:0.03em">📅 配送日期異動</td></tr>`,
+        1: `<tr><td colspan="6" style="background:#F2FBF2;color:#2e7d32;font-weight:700;font-size:0.78rem;padding:6px 12px;letter-spacing:0.03em">✅ 新訂單（將匯入）</td></tr>`,
+        2: `<tr><td colspan="6" style="background:#F5F5F5;color:#999;font-weight:700;font-size:0.78rem;padding:6px 12px;letter-spacing:0.03em">⊘ 已存在（略過）</td></tr>`,
+        3: `<tr><td colspan="6" style="background:#FFF0F0;color:#c62828;font-weight:700;font-size:0.78rem;padding:6px 12px;letter-spacing:0.03em">🗑 已取消（將刪除）</td></tr>`,
+        4: `<tr><td colspan="6" style="background:#F5F5F5;color:#999;font-weight:700;font-size:0.78rem;padding:6px 12px;letter-spacing:0.03em">⊘ 已取消（系統無此訂單，略過）</td></tr>`,
+        5: `<tr><td colspan="6" style="background:#FFFBF0;color:#c07820;font-weight:700;font-size:0.78rem;padding:6px 12px;letter-spacing:0.03em">⚠ 略過（缺出貨日期）</td></tr>`,
+    };
     document.getElementById('preview-wrap').innerHTML=`
         <table class="preview-table">
             <thead><tr><th>出貨日</th><th>訂單編號</th><th>品項</th><th>量</th><th>收件人</th><th>配送方式</th></tr></thead>
-            <tbody>${parsedRows.map(r=>{
-                const isDup      = !r.cancelled&&r.orderNumber&&dupNums.has(r.orderNumber);
-                const isDeleting = r.cancelled&&r.orderNumber&&toDeleteNums.has(r.orderNumber);
+            <tbody>${sortedForDisplay.map(r=>{
+                const isDup        = !r.cancelled&&r.orderNumber&&dupNums.has(r.orderNumber);
+                const isDateChg    = !r.cancelled&&r.orderNumber&&dateChgNums.has(r.orderNumber);
+                const isDeleting   = r.cancelled&&r.orderNumber&&toDeleteNums.has(r.orderNumber);
                 const isCancelSkip = r.cancelled&&r.orderNumber&&!toDeleteNums.has(r.orderNumber);
-                const rowCls = isDeleting?'row-cancel':isCancelSkip?'row-dup':isDup?'row-dup':r.valid?'row-ok':'row-warn';
-                return `<tr class="${rowCls}">
-                    <td>${r.date||'<span style="color:#c07820">缺日期</span>'}</td>
+                const rowCls = isDateChg?'row-date-chg':isDeleting?'row-cancel':isCancelSkip?'row-dup':isDup?'row-dup':r.valid?'row-ok':'row-warn';
+                const oldDate = isDateChg ? existingDateByNum[r.orderNumber] : '';
+                const grp = rowSortKey(r);
+                const hdr = grp !== lastGroup ? (lastGroup=grp, GROUP_LABELS[grp]||'') : '';
+                return `${hdr}<tr class="${rowCls}">
+                    <td>${isDateChg?`<span style="text-decoration:line-through;color:#aaa">${esc(oldDate)}</span> → <strong>${esc(r.date)}</strong>`:r.date||'<span style="color:#c07820">缺日期</span>'}</td>
                     <td>${esc(r.orderNumber)}
                         ${isDeleting?' <span class="badge-cancel">已取消→將刪除</span>':''}
                         ${isCancelSkip?' <span style="color:#bbb;font-size:0.72rem">已取消</span>':''}
                         ${isDup?' <span style="color:#bbb;font-size:0.72rem">已存在</span>':''}
+                        ${isDateChg?' <span class="badge-date-chg">日期異動</span>':''}
                     </td>
                     <td>${esc(r.item)}</td>
                     <td>${r.quantity||''}</td><td>${esc(r.customer)}</td><td>${esc(r.deliveryMethod)}</td>
@@ -1480,7 +1521,7 @@ function showPreview() {
         </table>`;
     document.getElementById('import-step1').style.display='none';
     document.getElementById('import-step2').style.display='';
-    if (validRows.length-dupRows.length>0||toDeleteRows.length>0) {
+    if (validRows.length-dupRows.length-dateChgNums.size>0||toDeleteRows.length>0||dateChgNums.size>0) {
         const unmatched = findUnmappedItems();
         if (unmatched.length) {
             document.getElementById('btn-show-mapping').style.display='';
@@ -1491,6 +1532,11 @@ function showPreview() {
     }
 }
 function doImport() {
+    // Build existing date map
+    const existingDateByNum = {};
+    for (const o of orders) {
+        if (o.orderNumber && !existingDateByNum[o.orderNumber]) existingDateByNum[o.orderNumber] = o.date;
+    }
     const existing = new Set(orders.map(o=>o.orderNumber).filter(Boolean));
     // 1. 刪除已取消訂單
     const cancelNums = new Set(
@@ -1502,7 +1548,7 @@ function doImport() {
         orders = orders.filter(o=>!o.orderNumber||!cancelNums.has(o.orderNumber));
         deleted = before - orders.length;
     }
-    // 2. 匯入新訂單
+    // 2. 匯入新訂單（跳過已存在，包含日期異動的訂單）
     let added = 0;
     parsedRows.filter(r=>r.valid&&!r.cancelled).forEach(r=>{
         if (r.orderNumber&&existing.has(r.orderNumber)) return;
@@ -1513,12 +1559,32 @@ function doImport() {
             orderNotes:r.orderNotes,shopNotes:''});
         added++;
     });
+    // 3. 直接套用日期異動（既有訂單，新舊日期不同）
+    const dateChgNums = new Set();
+    for (const r of parsedRows.filter(r=>r.valid&&!r.cancelled)) {
+        if (r.orderNumber && existingDateByNum[r.orderNumber] !== undefined &&
+            existingDateByNum[r.orderNumber] !== r.date) dateChgNums.add(r.orderNumber);
+    }
+    let dateUpdated = 0;
+    if (dateChgNums.size > 0) {
+        const newDateByNum = {};
+        for (const r of parsedRows.filter(r=>r.valid&&!r.cancelled)) {
+            if (dateChgNums.has(r.orderNumber)) newDateByNum[r.orderNumber] = r.date;
+        }
+        for (const o of orders) {
+            if (o.orderNumber && newDateByNum[o.orderNumber]) {
+                o.date = newDateByNum[o.orderNumber];
+                o.modified = true;
+                dateUpdated++;
+            }
+        }
+    }
     localSave();
     const first = parsedRows.find(r=>r.valid&&!r.cancelled)?.date;
     if (first) { const d=new Date(first+'T00:00:00'); currentMonth=new Date(d.getFullYear(),d.getMonth(),1); }
     render(); renderCalGrid();
     if (lastImportFile) uploadExcelToSP(lastImportFile);
-    const msg = [added?`匯入 ${added} 筆`:'', deleted?`刪除 ${deleted} 筆已取消訂單`:''].filter(Boolean).join('　');
+    const msg = [added?`匯入 ${added} 筆`:'', deleted?`刪除 ${deleted} 筆已取消訂單`:'', dateUpdated?`更新 ${dateChgNums.size} 筆配送日期`:''].filter(Boolean).join('　');
     resetImport(); toast(msg||'無變更 ✓','ok');
     scheduleAutoSave();
 }
