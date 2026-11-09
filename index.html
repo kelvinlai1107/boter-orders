@@ -174,6 +174,11 @@
         .preview-table th { background:#FDFAF7; padding:5px 8px; text-align:left; position:sticky; top:0; border-bottom:1px solid var(--border); white-space:nowrap; color:#9B7850; }
         .preview-table td { padding:5px 8px; border-bottom:1px solid #F5EDE0; max-width:160px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
         .row-date-chg td:first-child { max-width:none; }
+        .status-chk { width:26px; height:26px; display:inline-flex; align-items:center; justify-content:center; border:2px solid #D4B896; border-radius:5px; cursor:pointer; background:#fff; color:transparent; font-size:0.9rem; transition:all 0.15s; user-select:none; flex-shrink:0; }
+        .status-chk.done { background:var(--brand-dk); border-color:var(--brand-dk); color:#fff; }
+        .status-chk:hover:not(.done) { border-color:var(--brand); background:var(--brand-lt); color:#ccc; }
+        .td-chk { text-align:center; vertical-align:middle; padding:4px!important; }
+        .addon-inline { font-size:0.78rem; color:#5a3e28; line-height:1.7; }
         .row-ok  td:first-child { border-left:3px solid #5a7a2e; }
         .row-warn td:first-child { border-left:3px solid #c07820; }
         .imp-sum { background:#F0EBE0; border-radius:8px; padding:9px 13px; font-size:0.84rem; color:var(--brand-dk); }
@@ -246,8 +251,8 @@
         <button class="btn-today" onclick="goToday()">今天</button>
         <div class="h-right">
             <div class="view-tabs">
-                <button class="view-tab active" id="tab-orders" onclick="setViewMode('orders')">訂單</button>
-                <button class="view-tab" id="tab-production" onclick="setViewMode('production')">製作</button>
+                <button class="view-tab active" id="tab-orders" onclick="setViewMode('orders')">外場</button>
+                <button class="view-tab" id="tab-production" onclick="setViewMode('production')">內場</button>
             </div>
             <button class="btn-g" onclick="openImport()">📥 匯入 Cyberbiz</button>
             <button class="btn-p" onclick="openAdd()">＋ 新增訂單</button>
@@ -831,69 +836,51 @@ function render() {
         card.dataset.date = ds;
 
         if (viewMode === 'production') {
-            const mainDayOrders = dayOrders.filter(o => !isAddonItem(o.item));
-            if (!mainDayOrders.length) continue;
-            const itemMap = new Map();
-            for (const o of mainDayOrders) {
-                const disp = displayItem(o.item||'');
-                const po = productOrder(o.item||'');
-                if (itemMap.has(disp)) {
-                    itemMap.get(disp).qty += (+(o.quantity)||1);
-                } else {
-                    itemMap.set(disp, { disp, qty: +(o.quantity)||1, po });
-                }
-            }
-            const sorted = [...itemMap.values()].sort((a,b) => a.po !== b.po ? a.po - b.po : a.disp.localeCompare(b.disp, 'zh-TW'));
-            // Group items whose display name ends with -禮物 or -皇冠 by their base name
-            const FLAG_RE = /[-－‐–—\s](?:禮物|皇冠)$/;
-            const groupMap = new Map(); // base -> variants[]
-            for (const it of sorted) {
-                const m = it.disp.match(FLAG_RE);
-                if (m) {
-                    const base = it.disp.slice(0, -m[0].length);
-                    if (!groupMap.has(base)) groupMap.set(base, []);
-                    groupMap.get(base).push(it);
-                }
-            }
-            // Build rows preserving sorted order
-            const processedBases = new Set();
-            let rowsHtml = '';
-            for (const it of sorted) {
-                const m = it.disp.match(FLAG_RE);
-                if (m) {
-                    const base = it.disp.slice(0, -m[0].length);
-                    if (processedBases.has(base)) continue;
-                    processedBases.add(base);
-                    const variants = groupMap.get(base);
-                    const total = variants.reduce((s,v)=>s+v.qty, 0);
-                    variants.forEach((v, i) => {
-                        if (i === 0) {
-                            rowsHtml += `<tr><td>${esc(v.disp)}</td><td class="prod-qty">${v.qty}</td><td class="prod-total" rowspan="${variants.length}">${total}</td></tr>`;
-                        } else {
-                            rowsHtml += `<tr><td>${esc(v.disp)}</td><td class="prod-qty">${v.qty}</td></tr>`;
-                        }
-                    });
-                } else {
-                    rowsHtml += `<tr><td>${esc(it.disp)}</td><td></td><td class="prod-total">${it.qty}</td></tr>`;
-                }
-            }
+            if (!dayOrders.length) continue;
+            const innerRows = dayOrders.map(o => {
+                const dm = o.deliveryMethod||o.timeSlot||'';
+                const delivCls = dm.includes('宅')||dm.includes('冷凍') ? 'bdg bdg-home'
+                               : dm.includes('門市')||dm.includes('取貨') ? 'bdg bdg-store'
+                               : 'bdg bdg-other';
+                const madeChk = `<span class="status-chk${o.madeStatus?' done':''}" onclick="quickMadeStatus('${o.id}',${!o.madeStatus})">✓</span>`;
+                const modBadge = o.modified ? '<span class="badge-mod">異動</span>' : '';
+                return `<tr>
+                    <td class="td-n" title="${esc(dm)}"><span class="${delivCls}">${esc(dm)}</span></td>
+                    <td class="td-chk">${madeChk}</td>
+                    <td class="td-w">${esc(displayItemBase(o))}</td>
+                    <td class="td-n" style="text-align:center">${o.quantity||1}</td>
+                    <td class="td-w">${esc(o.orderNotes||'')}</td>
+                    <td class="td-n" style="position:relative;padding-left:${o.createdDate===todayStr?'14px':'7px'}">${o.createdDate===todayStr?'<span class="dot-new"></span>':''}${esc(o.orderNumber||'')}${modBadge}</td>
+                    <td class="td-n"><div style="display:flex;gap:2px">
+                        <button class="btn-act" onclick="openEdit('${o.id}')">✏</button>
+                        <button class="btn-act" onclick="delOrder('${o.id}')">🗑</button>
+                    </div></td>
+                </tr>`;
+            }).join('');
             card.innerHTML = `
                 <div class="day-hdr">
                     <span class="day-name">星期${DAY_ZH[day.getDay()]}</span>
                     <span class="day-date-lbl">${day.getMonth()+1}月${day.getDate()}日</span>
                     ${isToday ? '<span class="today-badge">今天</span>' : ''}
+                    <span class="order-count">${dayOrders.length} 筆</span>
                 </div>
-                <div style="padding:4px 4px 10px">
-                    <table class="prod-table">
-                        <thead><tr><th>品項</th><th>小計</th><th>合計</th></tr></thead>
-                        <tbody>${rowsHtml}</tbody>
-                    </table>
-                </div>`;
+                <table class="sched-table">
+                    <colgroup>
+                        <col style="width:115px"><col style="width:44px"><col style="width:180px">
+                        <col style="width:36px"><col style="width:160px"><col style="width:100px">
+                        <col style="width:50px">
+                    </colgroup>
+                    <thead><tr>
+                        <th>配送方式</th><th>製作</th><th>品項</th>
+                        <th>量</th><th>訂單備註</th><th>訂單編號</th><th></th>
+                    </tr></thead>
+                    <tbody>${innerRows}</tbody>
+                </table>`;
             wrap.appendChild(card);
             continue;
         }
 
-        // Separate add-ons (其他 category) from main items
+        // 外場 view: separate add-ons from main items; show add-ons inline in 加購 column
         const addonsByNum = {};
         const mainOrders = [];
         for (const o of dayOrders) {
@@ -903,42 +890,34 @@ function render() {
                 mainOrders.push(o);
             }
         }
-        const shownAddonNums = new Set();
         const rows = mainOrders.map(o => {
             const dm = o.deliveryMethod||o.timeSlot||'';
             const delivCls = dm.includes('宅')||dm.includes('冷凍') ? 'bdg bdg-home'
                            : dm.includes('門市')||dm.includes('取貨') ? 'bdg bdg-store'
                            : 'bdg bdg-other';
             const modBadge = o.modified ? '<span class="badge-mod">異動</span>' : '';
-            const pv = o.pickup||'未取貨';
-            const pbg = pv==='已自取'?'#e8f5e9':pv==='已出貨'?'#e3f2fd':'#f3f0eb';
-            const pco = pv==='已自取'?'#2e7d32':pv==='已出貨'?'#1565c0':'#9B7850';
-            const pOpts = ['未取貨','已自取','已出貨'].map(v=>`<option value="${v}"${v===pv?' selected':''}>${v}</option>`).join('');
+            const madeChk = `<span class="status-chk${o.madeStatus?' done':''}" onclick="quickMadeStatus('${o.id}',${!o.madeStatus})">✓</span>`;
+            const isShipped = o.pickup==='已出貨'||o.pickup==='已自取';
+            const shipChk = `<span class="status-chk${isShipped?' done':''}" onclick="quickShipped('${o.id}',${!isShipped})">✓</span>`;
             const addons = o.orderNumber ? (addonsByNum[o.orderNumber]||[]) : [];
-            const hasAddons = addons.length > 0;
-            const arid = hasAddons ? 'adr_'+(o.orderNumber).replace(/\W/g,'_') : '';
-            const addonBadge = hasAddons ? `<span class="badge-addon" data-arid="${arid}" onclick="toggleAddons('${arid}')" title="點擊展開加購項目">加購 ▾</span>` : '';
-            let addonRow = '';
-            if (hasAddons && !shownAddonNums.has(o.orderNumber)) {
-                shownAddonNums.add(o.orderNumber);
-                const addonHtml = addons.map(a=>`<span class="addon-item">${esc(displayItem(a.item||''))} ×${a.quantity||1}<button class="btn-act" onclick="openEdit('${a.id}')" style="padding:1px 4px;font-size:0.73rem">✏</button><button class="btn-act" onclick="delOrder('${a.id}')" style="padding:1px 4px;font-size:0.73rem">🗑</button></span>`).join('');
-                addonRow = `<tr id="${arid}" class="addon-row" style="display:none"><td colspan="10" class="addon-cell"><div class="addon-list">加購項目：${addonHtml}</div></td></tr>`;
-            }
+            const addonDisp = addons.map(a=>`${esc(displayItemBase(a))} ×${a.quantity||1}`).join('<br>');
             return `<tr>
                 <td class="td-n" title="${esc(dm)}"><span class="${delivCls}">${esc(dm)}</span></td>
-                <td class="td-w">${esc(displayItem(o.item||''))}${addonBadge}</td>
+                <td class="td-chk">${madeChk}</td>
+                <td class="td-w">${esc(displayItemBase(o))}</td>
                 <td class="td-n" style="text-align:center">${o.quantity||1}</td>
+                <td class="td-n">${esc(o.variant||'')}</td>
+                <td class="td-w"><div class="addon-inline">${addonDisp}</div></td>
                 <td class="td-w">${esc(o.orderNotes||'')}</td>
-                <td class="td-w">${esc(o.shopNotes||'')}</td>
                 <td class="td-n" title="${esc(o.customer||'')}">${esc(o.customer||'')}</td>
                 <td class="td-n" title="${esc(o.phone||'')}">${esc(o.phone||'')}</td>
-                <td class="td-n"><select class="pickup-sel" style="background:${pbg};color:${pco}" onchange="quickPickup('${o.id}',this.value)">${pOpts}</select></td>
+                <td class="td-chk">${shipChk}</td>
                 <td class="td-n" style="position:relative;padding-left:${o.createdDate===todayStr?'14px':'7px'}">${o.createdDate===todayStr?'<span class="dot-new"></span>':''}${esc(o.orderNumber||'')}${modBadge}</td>
                 <td class="td-n"><div style="display:flex;gap:2px">
                     <button class="btn-act" onclick="openEdit('${o.id}')">✏</button>
                     <button class="btn-act" onclick="delOrder('${o.id}')">🗑</button>
                 </div></td>
-            </tr>${addonRow}`;
+            </tr>`;
         }).join('');
 
         card.innerHTML = `
@@ -951,16 +930,16 @@ function render() {
             ${dayOrders.length===0 ? '<div class="no-orders">— 無訂單 —</div>'
             : `<table class="sched-table">
                 <colgroup>
-                    <col style="width:118px"><col style="width:168px"><col style="width:36px">
-                    <col style="width:150px"><col style="width:110px">
-                    <col style="width:70px"><col style="width:103px">
-                    <col style="width:68px"><col style="width:88px"><col style="width:50px">
+                    <col style="width:115px"><col style="width:44px"><col style="width:150px">
+                    <col style="width:36px"><col style="width:55px"><col style="width:150px">
+                    <col style="width:130px"><col style="width:68px"><col style="width:95px">
+                    <col style="width:44px"><col style="width:90px"><col style="width:50px">
                 </colgroup>
                 <thead><tr>
-                    <th>配送方式</th><th>品項</th><th>量</th>
-                    <th>訂單備註</th><th>商家備註</th>
-                    <th>收件人</th><th>收件人電話</th>
-                    <th>取貨狀態</th><th>訂單編號</th><th></th>
+                    <th>配送方式</th><th>製作</th><th>品項</th>
+                    <th>量</th><th>款式</th><th>加購</th>
+                    <th>訂單備註</th><th>收件人</th><th>收件人電話</th>
+                    <th>出貨</th><th>訂單編號</th><th></th>
                 </tr></thead>
                 <tbody>${rows}</tbody>
             </table>`}`;
@@ -1267,6 +1246,24 @@ function saveProducts() {
     if (pendingImport) { pendingImport = false; openOverlay('import-overlay'); doImport(); }
 }
 
+function displayItemBase(o) {
+    const disp = displayItem(o.item || '');
+    if (!o.variant) return disp;
+    const v = String(o.variant).trim();
+    if (!v) return disp;
+    for (const sep of ['-', ' ']) {
+        if (disp.endsWith(sep + v)) return disp.slice(0, -(sep.length + v.length)).trim();
+    }
+    return disp;
+}
+function quickMadeStatus(id, checked) {
+    const i = orders.findIndex(o=>o.id===id); if(i<0) return;
+    orders[i].madeStatus = checked; localSave(); render(); scheduleAutoSave();
+}
+function quickShipped(id, checked) {
+    const i = orders.findIndex(o=>o.id===id); if(i<0) return;
+    orders[i].pickup = checked ? '已出貨' : '未取貨'; localSave(); render(); scheduleAutoSave();
+}
 function quickPickup(id, val) {
     const i = orders.findIndex(o=>o.id===id); if(i<0) return;
     orders[i].pickup=val; localSave(); render(); scheduleAutoSave();
@@ -1381,7 +1378,7 @@ function parseRows(headers, dataRows) {
         return {
             date, rawDate,
             orderNumber:    get(row, cols.orderNumber),
-            item, quantity: parseInt(get(row,cols.quantity))||1,
+            item, variant,  quantity: parseInt(get(row,cols.quantity))||1,
             customer:       get(row, cols.customer),
             phone:          get(row, cols.phone),
             orderNotes:     get(row, cols.orderNotes),
@@ -1552,10 +1549,10 @@ function doImport() {
     let added = 0;
     parsedRows.filter(r=>r.valid&&!r.cancelled).forEach(r=>{
         if (r.orderNumber&&existing.has(r.orderNumber)) return;
-        orders.push({id:uid(),source:'import',modified:false,pickup:'未取貨',
+        orders.push({id:uid(),source:'import',modified:false,pickup:'未取貨',madeStatus:false,
             createdDate:fmtDate(new Date()),
             date:r.date,orderNumber:r.orderNumber,deliveryMethod:r.deliveryMethod,
-            item:r.item,quantity:r.quantity,customer:r.customer,phone:r.phone,
+            item:r.item,variant:r.variant||'',quantity:r.quantity,customer:r.customer,phone:r.phone,
             orderNotes:r.orderNotes,shopNotes:''});
         added++;
     });
