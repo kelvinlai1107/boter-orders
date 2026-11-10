@@ -841,7 +841,8 @@ function render() {
 
         if (viewMode === 'production') {
             if (!dayOrders.length) continue;
-            const innerRows = dayOrders.filter(o => !isAddonItem(o.item)).map(o => {
+            const innerOrders = dayOrders.filter(o => !isAddonItem(o.item));
+            const innerRows = innerOrders.map(o => {
                 const dm = o.deliveryMethod||o.timeSlot||'';
                 const delivCls = dm.includes('宅')||dm.includes('冷凍') ? 'bdg bdg-home'
                                : dm.includes('門市')||dm.includes('取貨') ? 'bdg bdg-store'
@@ -862,7 +863,7 @@ function render() {
                     <span class="day-name">星期${DAY_ZH[day.getDay()]}</span>
                     <span class="day-date-lbl">${day.getMonth()+1}月${day.getDate()}日</span>
                     ${isToday ? '<span class="today-badge">今天</span>' : ''}
-                    <span class="order-count">${dayOrders.length} 筆</span>
+                    <span class="order-count">${innerOrders.length} 筆</span>
                 </div>
                 <table class="sched-table">
                     <colgroup>
@@ -924,7 +925,7 @@ function render() {
                 <span class="day-name">星期${DAY_ZH[day.getDay()]}</span>
                 <span class="day-date-lbl">${day.getMonth()+1}月${day.getDate()}日</span>
                 ${isToday?'<span class="today-badge">今天</span>':''}
-                ${dayOrders.length?`<span class="order-count">${dayOrders.length} 筆</span>`:''}
+                ${mainOrders.length?`<span class="order-count">${mainOrders.length} 筆</span>`:''}
             </div>
             ${dayOrders.length===0 ? '<div class="no-orders">— 無訂單 —</div>'
             : `<table class="sched-table">
