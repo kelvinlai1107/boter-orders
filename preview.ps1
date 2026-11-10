@@ -26,15 +26,21 @@ if ($status) {
     exit 1
 }
 
-# 讀取 dev 的 index.html，將 redirectUri 改為 /dev/ 版本
+# 讀取 dev 的 index.html，將 redirectUri 與 FILE_NAME 改為 /dev/ 測試版
 Write-Host "[1/4] 讀取 dev 版本 index.html…" -ForegroundColor Cyan
 $content = Get-Content "$RepoRoot\index.html" -Raw -Encoding UTF8
-$devContent = $content -replace "redirectUri: 'https://orders.boter.com.tw'", "redirectUri: 'https://orders.boter.com.tw/dev/'"
+$devContent = $content -replace "redirectUri: 'https://orders\.boter\.com\.tw'", "redirectUri: 'https://orders.boter.com.tw/dev/'"
 if ($devContent -eq $content) {
     Write-Host "  ✗ 找不到 redirectUri 設定，請確認 index.html 內容" -ForegroundColor Red
     exit 1
 }
+$devContent = $devContent -replace "const FILE_NAME = 'orders\.json'", "const FILE_NAME = 'orders-dev.json'"
+if ($devContent -notmatch "orders-dev\.json") {
+    Write-Host "  ✗ 找不到 FILE_NAME 設定，請確認 index.html 內容" -ForegroundColor Red
+    exit 1
+}
 Write-Host "  ✓ redirectUri 已調整為 /dev/" -ForegroundColor Green
+Write-Host "  ✓ FILE_NAME 已調整為 orders-dev.json（測試版獨立資料）" -ForegroundColor Green
 
 # 切到 main
 Write-Host "[2/4] 切換到 main…" -ForegroundColor Cyan
