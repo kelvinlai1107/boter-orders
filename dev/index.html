@@ -906,7 +906,7 @@ function render() {
                 <td class="td-chk">${madeChk}</td>
                 <td class="td-w">${esc(displayItemBase(o))}</td>
                 <td class="td-n" style="text-align:center">${o.quantity||1}</td>
-                <td class="td-n">${esc(o.variant||'')}</td>
+                <td class="td-n">${esc(extractVariant(o))}</td>
                 <td class="td-w"><div class="addon-inline">${addonDisp}</div></td>
                 <td class="td-w">${esc(o.orderNotes||'')}</td>
                 <td class="td-n" title="${esc(o.customer||'')}">${esc(o.customer||'')}</td>
@@ -1246,10 +1246,22 @@ function saveProducts() {
     if (pendingImport) { pendingImport = false; openOverlay('import-overlay'); doImport(); }
 }
 
+const VARIANT_TOKENS = ['禮物','皇冠','粉綠','粉紅'];
+function extractVariant(o) {
+    // 優先用儲存的 variant 欄位（新匯入訂單）
+    if (o.variant && o.variant.trim()) return o.variant.trim();
+    // 舊訂單：從品項名稱末尾偵測已知款式後綴（需有分隔符）
+    const disp = displayItem(o.item || '');
+    for (const v of VARIANT_TOKENS) {
+        for (const sep of ['-', ' ']) {
+            if (disp.endsWith(sep + v)) return v;
+        }
+    }
+    return '';
+}
 function displayItemBase(o) {
     const disp = displayItem(o.item || '');
-    if (!o.variant) return disp;
-    const v = String(o.variant).trim();
+    const v = extractVariant(o);
     if (!v) return disp;
     for (const sep of ['-', ' ']) {
         if (disp.endsWith(sep + v)) return disp.slice(0, -(sep.length + v.length)).trim();
