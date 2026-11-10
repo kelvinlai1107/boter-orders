@@ -178,6 +178,7 @@
         .status-chk.done { background:var(--brand-dk); border-color:var(--brand-dk); color:#fff; }
         .status-chk:hover:not(.done) { border-color:var(--brand); background:var(--brand-lt); color:#ccc; }
         .td-chk { text-align:center; vertical-align:middle; padding:4px!important; }
+        .th-c { text-align:center!important; }
         .addon-inline { font-size:0.78rem; color:#5a3e28; line-height:1.7; }
         .row-ok  td:first-child { border-left:3px solid #5a7a2e; }
         .row-warn td:first-child { border-left:3px solid #c07820; }
@@ -837,7 +838,7 @@ function render() {
 
         if (viewMode === 'production') {
             if (!dayOrders.length) continue;
-            const innerRows = dayOrders.map(o => {
+            const innerRows = dayOrders.filter(o => !isAddonItem(o.item)).map(o => {
                 const dm = o.deliveryMethod||o.timeSlot||'';
                 const delivCls = dm.includes('宅')||dm.includes('冷凍') ? 'bdg bdg-home'
                                : dm.includes('門市')||dm.includes('取貨') ? 'bdg bdg-store'
@@ -851,10 +852,6 @@ function render() {
                     <td class="td-n" style="text-align:center">${o.quantity||1}</td>
                     <td class="td-w">${esc(o.orderNotes||'')}</td>
                     <td class="td-n" style="position:relative;padding-left:${o.createdDate===todayStr?'14px':'7px'}">${o.createdDate===todayStr?'<span class="dot-new"></span>':''}${esc(o.orderNumber||'')}${modBadge}</td>
-                    <td class="td-n"><div style="display:flex;gap:2px">
-                        <button class="btn-act" onclick="openEdit('${o.id}')">✏</button>
-                        <button class="btn-act" onclick="delOrder('${o.id}')">🗑</button>
-                    </div></td>
                 </tr>`;
             }).join('');
             card.innerHTML = `
@@ -868,11 +865,10 @@ function render() {
                     <colgroup>
                         <col style="width:115px"><col style="width:44px"><col style="width:180px">
                         <col style="width:36px"><col style="width:160px"><col style="width:100px">
-                        <col style="width:50px">
                     </colgroup>
                     <thead><tr>
-                        <th>配送方式</th><th>製作</th><th>品項</th>
-                        <th>量</th><th>訂單備註</th><th>訂單編號</th><th></th>
+                        <th>配送方式</th><th class="th-c">製作</th><th>品項</th>
+                        <th class="th-c">數量</th><th>訂單備註</th><th>訂單編號</th>
                     </tr></thead>
                     <tbody>${innerRows}</tbody>
                 </table>`;
@@ -936,10 +932,10 @@ function render() {
                     <col style="width:44px"><col style="width:90px"><col style="width:50px">
                 </colgroup>
                 <thead><tr>
-                    <th>配送方式</th><th>製作</th><th>品項</th>
-                    <th>量</th><th>款式</th><th>加購</th>
+                    <th>配送方式</th><th class="th-c">製作</th><th>品項</th>
+                    <th class="th-c">數量</th><th>款式</th><th>加購</th>
                     <th>訂單備註</th><th>收件人</th><th>收件人電話</th>
-                    <th>出貨</th><th>訂單編號</th><th></th>
+                    <th class="th-c">出貨</th><th>訂單編號</th><th></th>
                 </tr></thead>
                 <tbody>${rows}</tbody>
             </table>`}`;
