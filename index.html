@@ -1246,11 +1246,14 @@ const VARIANT_TOKENS = ['禮物','皇冠','粉綠','粉紅'];
 function extractVariant(o) {
     // 優先用儲存的 variant 欄位（新匯入訂單）
     if (o.variant && o.variant.trim()) return o.variant.trim();
-    // 舊訂單：從品項名稱末尾偵測已知款式後綴（需有分隔符）
+    // 舊訂單：先比對品項清單的顯示名稱，再 fallback 至原始儲存名稱（normItem）
     const disp = displayItem(o.item || '');
+    const raw  = normItem(o.item || '');
     for (const v of VARIANT_TOKENS) {
-        for (const sep of ['-', ' ']) {
-            if (disp.endsWith(sep + v)) return v;
+        for (const src of [disp, raw]) {
+            for (const sep of ['-', ' ']) {
+                if (src.endsWith(sep + v)) return v;
+            }
         }
     }
     return '';
