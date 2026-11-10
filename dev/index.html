@@ -153,6 +153,9 @@
         .disp-inp { flex:1; border:none; border-bottom:1px dashed #d0c0a8; background:transparent; font-size:0.82rem; font-family:inherit; outline:none; color:#9B6B2E; padding:1px 3px; }
         .disp-inp::placeholder { color:#d0b898; font-style:italic; }
         .disp-inp:focus { border-bottom:1px solid var(--brand); }
+        .variant-inp { width:72px; border:none; border-bottom:1px dashed #d0c0a8; background:transparent; font-size:0.82rem; font-family:inherit; outline:none; color:#7a5230; padding:1px 3px; flex-shrink:0; }
+        .variant-inp::placeholder { color:#d0b898; font-style:italic; }
+        .variant-inp:focus { border-bottom:1px solid var(--brand); }
         .item-add-row { padding:4px 10px 8px 20px; }
         .prod-btn { background:none; border:none; cursor:pointer; padding:2px 6px; border-radius:4px; font-size:0.82rem; color:#c9b99a; }
         .prod-btn:hover { background:var(--brand-lt); color:var(--brand); }
@@ -1134,6 +1137,8 @@ function renderProdTree() {
                         <input class="item-inp" value="${esc(it.name)}" onchange="tempProds[${ci}].items[${ii}].name=this.value.trim()" placeholder="商品名稱">
                         <span class="disp-arr">→</span>
                         <input class="disp-inp" data-ci="${ci}" data-ii="${ii}" value="${esc(it.displayName||'')}" placeholder="工具顯示名稱（選填）">
+                        <span class="disp-arr" title="款式（如：禮物、皇冠）">款式</span>
+                        <input class="variant-inp" data-ci="${ci}" data-ii="${ii}" value="${esc(it.prodVariant||'')}" placeholder="如：禮物">
                         <button class="prod-btn del" onclick="delItem(${ci},${ii})">✕</button>
                     </div>`).join('')}
             </div>
@@ -1229,12 +1234,20 @@ function syncProdInputs() {
         const ci=+inp.dataset.ci, ii=+inp.dataset.ii;
         if(tempProds[ci]?.items?.[ii]) tempProds[ci].items[ii].displayName=inp.value.trim();
     });
+    document.querySelectorAll('.variant-inp').forEach(inp=>{
+        const ci=+inp.dataset.ci, ii=+inp.dataset.ii;
+        if(tempProds[ci]?.items?.[ii]) tempProds[ci].items[ii].prodVariant=inp.value.trim();
+    });
 }
 function saveProducts() {
     document.querySelectorAll('.cat-inp').forEach((inp,ci)=>{ if(tempProds[ci]) tempProds[ci].name=inp.value.trim(); });
     document.querySelectorAll('.disp-inp').forEach(inp=>{
         const ci=+inp.dataset.ci, ii=+inp.dataset.ii;
         if(tempProds[ci]?.items?.[ii]) tempProds[ci].items[ii].displayName=inp.value.trim();
+    });
+    document.querySelectorAll('.variant-inp').forEach(inp=>{
+        const ci=+inp.dataset.ci, ii=+inp.dataset.ii;
+        if(tempProds[ci]?.items?.[ii]) tempProds[ci].items[ii].prodVariant=inp.value.trim();
     });
     const cleaned = tempProds.filter(c=>c.name).map(c=>({...c,items:(c.items||[]).filter(it=>it.name)}));
     setProducts(cleaned); closeOverlay('products-overlay'); render(); toast('品項清單已儲存','ok');
@@ -1245,30 +1258,31 @@ function saveProducts() {
 const VARIANT_TOKENS = ['禮物','皇冠','粉綠','粉紅'];
 function extractVariant(o) {
     // 優先用儲存的 variant 欄位（新匯入訂單）
-    if (o.variant && o.variant.trim()) { console.log('[variant] from o.variant:', o.item, '->', o.variant.trim()); return o.variant.trim(); }
+    if (o.variant && o.variant.trim()) return o.variant.trim();
     // 舊訂單：先比對品項清單的顯示名稱，再 fallback 至原始儲存名稱（normItem）
     const disp = displayItem(o.item || '');
     const raw  = normItem(o.item || '');
-    console.log('[variant] checking item:', JSON.stringify(o.item), '| o.variant:', JSON.stringify(o.variant), '| disp:', disp, '| raw:', raw);
     for (const v of VARIANT_TOKENS) {
         for (const src of [disp, raw]) {
             for (const sep of ['-', ' ']) {
-                if (src.endsWith(sep + v)) { console.log('[variant] found via suffix:', v); return v; }
+                if (src.endsWith(sep + v)) return v;
             }
         }
     }
-    // 最後備案：掃描品項清單，找是否有品項 name = o.item + " " + 款式
+    // 備案：掃描品項清單，找是否有品項 name = o.item + " " + 款式
     const ni = normItem(o.item || '');
     if (ni) {
         for (const cat of getProducts()) {
             for (const it of (cat.items||[])) {
+                // 優先用品項清單的 prodVariant 欄位（使用者手動設定的款式）
+                if (it.prodVariant && normItem(it.name) === ni) return it.prodVariant;
+                // 再試 name 後綴比對
                 const pn = normItem(it.name);
                 for (const v of VARIANT_TOKENS) {
-                    if (pn === ni + ' ' + v) { console.log('[variant] found via product list:', v, '| product name:', it.name); return v; }
+                    if (pn === ni + ' ' + v) return v;
                 }
             }
         }
-        console.log('[variant] NO MATCH. Product names:', getProducts().flatMap(c=>c.items||[]).map(i=>i.name));
     }
     return '';
 }
