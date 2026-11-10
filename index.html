@@ -1256,6 +1256,19 @@ function extractVariant(o) {
             }
         }
     }
+    // 最後備案：掃描品項清單，找是否有品項 name = o.item + " " + 款式
+    // （處理 o.item 是純品名、款式只儲存在品項清單 name 裡的情形）
+    const ni = normItem(o.item || '');
+    if (ni) {
+        for (const cat of getProducts()) {
+            for (const it of (cat.items||[])) {
+                const pn = normItem(it.name);
+                for (const v of VARIANT_TOKENS) {
+                    if (pn === ni + ' ' + v) return v;
+                }
+            }
+        }
+    }
     return '';
 }
 function displayItemBase(o) {
