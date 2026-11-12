@@ -81,15 +81,15 @@
         .no-orders { padding:14px; text-align:center; color:#ccc; font-size:0.84rem; }
 
         /* TABLE */
-        .sched-table { width:100%; border-collapse:collapse; table-layout:fixed; font-size:0.81rem; }
-        .sched-table th { background:#FDFAF7; padding:6px 7px; text-align:left; font-size:0.74rem; color:#9B7850; font-weight:600; border-bottom:1px solid var(--border); white-space:nowrap; overflow:hidden; }
-        .sched-table td { padding:6px 7px; border-bottom:1px solid #F5EDE0; vertical-align:top; }
+        .sched-table { width:100%; border-collapse:collapse; table-layout:fixed; font-size:0.92rem; }
+        .sched-table th { background:#FDFAF7; padding:7px 8px; text-align:left; font-size:0.82rem; color:#9B7850; font-weight:600; border-bottom:1px solid var(--border); white-space:nowrap; overflow:hidden; }
+        .sched-table td { padding:8px 8px; border-bottom:1px solid #F5EDE0; vertical-align:top; }
         .sched-table tr:last-child td { border-bottom:none; }
         .sched-table tr:hover td { background:#FDFAF7; }
         .td-n { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
         .td-w { white-space:normal; word-break:break-all; overflow:visible; }
 
-        .bdg { display:inline-block; padding:1px 6px; border-radius:8px; font-size:0.74rem; white-space:nowrap; }
+        .bdg { display:inline-block; padding:2px 7px; border-radius:8px; font-size:0.80rem; white-space:nowrap; }
         .bdg-home  { background:#fff3e0; color:#b05a00; }
         .bdg-store { background:#e8f5e9; color:#2e7d32; }
         .bdg-other { background:#f3f0eb; color:#7a6248; }
@@ -97,7 +97,7 @@
         .badge-addon { display:inline-block; cursor:pointer; font-size:0.68rem; background:#f0e8dc; color:var(--brand); border:1px solid var(--border); border-radius:3px; padding:1px 5px; margin-left:5px; white-space:nowrap; user-select:none; vertical-align:middle; }
         .badge-addon:hover { background:var(--brand-lt); }
         .addon-row>td { padding:0 !important; background:#fdf9f5; border-bottom:1px solid var(--border); }
-        .addon-list { padding:5px 12px 6px 22px; font-size:0.8rem; color:#7a5220; display:flex; flex-wrap:wrap; gap:6px; align-items:center; }
+        .addon-list { padding:5px 12px 6px 22px; font-size:0.88rem; color:#7a5220; display:flex; flex-wrap:wrap; gap:6px; align-items:center; }
         .addon-item { display:inline-flex; align-items:center; gap:3px; background:#f5ebe0; border-radius:4px; padding:2px 7px; border:1px solid var(--border); }
         .view-tabs { display:inline-flex; background:var(--brand-lt); border-radius:8px; padding:2px; gap:2px; }
         .view-tab { border:none; background:transparent; padding:4px 14px; border-radius:6px; font-size:0.82rem; cursor:pointer; font-family:inherit; color:var(--brand); font-weight:500; }
@@ -199,7 +199,7 @@
         .status-chk:hover:not(.done) { border-color:var(--brand); background:var(--brand-lt); color:#ccc; }
         .td-chk { text-align:center; vertical-align:middle; padding:4px!important; }
         .th-c { text-align:center!important; }
-        .addon-inline { font-size:0.78rem; color:#5a3e28; line-height:1.7; }
+        .addon-inline { font-size:0.86rem; color:#5a3e28; line-height:1.7; }
         .row-ok  td:first-child { border-left:3px solid #5a7a2e; }
         .row-warn td:first-child { border-left:3px solid #c07820; }
         .imp-sum { background:#F0EBE0; border-radius:8px; padding:9px 13px; font-size:0.84rem; color:var(--brand-dk); }
@@ -698,10 +698,10 @@ async function loadData(silent=false) {
         orders = data.orders || [];
         if (data.products && data.products.length) setProducts(data.products);
         localSave(); render(); updateSyncTs();
-        if (!silent) toast('資料已載入 ✓', 'ok');
+        if (!silent) { toast('資料已載入 ✓', 'ok'); scrollToToday(); }
     } catch(e) {
         orders = JSON.parse(localStorage.getItem('boter_orders') || '[]');
-        render(); if (!silent) toast('使用本機暫存資料', '');
+        render(); if (!silent) { toast('使用本機暫存資料', ''); scrollToToday(); }
     }
 }
 function updateSyncTs() {
@@ -759,20 +759,23 @@ function fmtDate(d) {
 }
 const DAY_ZH = ['日','一','二','三','四','五','六'];
 
-function goToday() {
-    const t = new Date();
-    currentMonth = new Date(t.getFullYear(), t.getMonth(), 1);
-    calViewDate  = new Date(t.getFullYear(), t.getMonth(), 1);
-    render(); renderCalGrid();
-    const todayStr = fmtDate(t);
-    requestAnimationFrame(() => {
+function scrollToToday() {
+    const todayStr = fmtDate(new Date());
+    requestAnimationFrame(() => requestAnimationFrame(() => {
         const el = document.querySelector(`.day-card[data-date="${todayStr}"]`);
         if (el) {
             const headerH = document.querySelector('header')?.offsetHeight || 62;
             const top = el.getBoundingClientRect().top + window.scrollY - headerH - 10;
             window.scrollTo({ top, behavior: 'smooth' });
         }
-    });
+    }));
+}
+function goToday() {
+    const t = new Date();
+    currentMonth = new Date(t.getFullYear(), t.getMonth(), 1);
+    calViewDate  = new Date(t.getFullYear(), t.getMonth(), 1);
+    render(); renderCalGrid();
+    scrollToToday();
 }
 function changeMonth(dir) {
     currentMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth()+dir, 1);
@@ -819,14 +822,14 @@ function pickDay(ds) {
     currentMonth = new Date(d.getFullYear(), d.getMonth(), 1);
     document.getElementById('cal-popup').classList.remove('open');
     render(); renderCalGrid();
-    requestAnimationFrame(() => {
+    requestAnimationFrame(() => requestAnimationFrame(() => {
         const el = document.querySelector(`.day-card[data-date="${ds}"]`);
         if (el) {
             const headerH = document.querySelector('header')?.offsetHeight || 62;
             const top = el.getBoundingClientRect().top + window.scrollY - headerH - 10;
             window.scrollTo({ top, behavior: 'smooth' });
         }
-    });
+    }));
 }
 
 /* ── RENDER ── */
