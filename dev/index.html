@@ -744,6 +744,7 @@ function setViewMode(mode) {
     document.getElementById('tab-orders').classList.toggle('active', mode === 'orders');
     document.getElementById('tab-production').classList.toggle('active', mode === 'production');
     render();
+    scrollToToday();
 }
 function scheduleAutoSave() {
     _pendingSave = true;
