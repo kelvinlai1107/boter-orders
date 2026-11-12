@@ -81,15 +81,15 @@
         .no-orders { padding:14px; text-align:center; color:#ccc; font-size:0.84rem; }
 
         /* TABLE */
-        .sched-table { width:100%; border-collapse:collapse; table-layout:fixed; font-size:0.81rem; }
-        .sched-table th { background:#FDFAF7; padding:6px 7px; text-align:left; font-size:0.74rem; color:#9B7850; font-weight:600; border-bottom:1px solid var(--border); white-space:nowrap; overflow:hidden; }
-        .sched-table td { padding:6px 7px; border-bottom:1px solid #F5EDE0; vertical-align:top; }
+        .sched-table { width:100%; border-collapse:collapse; table-layout:fixed; font-size:0.92rem; }
+        .sched-table th { background:#FDFAF7; padding:7px 8px; text-align:left; font-size:0.82rem; color:#9B7850; font-weight:600; border-bottom:1px solid var(--border); white-space:nowrap; overflow:hidden; }
+        .sched-table td { padding:8px 8px; border-bottom:1px solid #F5EDE0; vertical-align:top; }
         .sched-table tr:last-child td { border-bottom:none; }
         .sched-table tr:hover td { background:#FDFAF7; }
         .td-n { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
         .td-w { white-space:normal; word-break:break-all; overflow:visible; }
 
-        .bdg { display:inline-block; padding:1px 6px; border-radius:8px; font-size:0.74rem; white-space:nowrap; }
+        .bdg { display:inline-block; padding:2px 7px; border-radius:8px; font-size:0.80rem; white-space:nowrap; }
         .bdg-home  { background:#fff3e0; color:#b05a00; }
         .bdg-store { background:#e8f5e9; color:#2e7d32; }
         .bdg-other { background:#f3f0eb; color:#7a6248; }
@@ -97,7 +97,7 @@
         .badge-addon { display:inline-block; cursor:pointer; font-size:0.68rem; background:#f0e8dc; color:var(--brand); border:1px solid var(--border); border-radius:3px; padding:1px 5px; margin-left:5px; white-space:nowrap; user-select:none; vertical-align:middle; }
         .badge-addon:hover { background:var(--brand-lt); }
         .addon-row>td { padding:0 !important; background:#fdf9f5; border-bottom:1px solid var(--border); }
-        .addon-list { padding:5px 12px 6px 22px; font-size:0.8rem; color:#7a5220; display:flex; flex-wrap:wrap; gap:6px; align-items:center; }
+        .addon-list { padding:5px 12px 6px 22px; font-size:0.88rem; color:#7a5220; display:flex; flex-wrap:wrap; gap:6px; align-items:center; }
         .addon-item { display:inline-flex; align-items:center; gap:3px; background:#f5ebe0; border-radius:4px; padding:2px 7px; border:1px solid var(--border); }
         .view-tabs { display:inline-flex; background:var(--brand-lt); border-radius:8px; padding:2px; gap:2px; }
         .view-tab { border:none; background:transparent; padding:4px 14px; border-radius:6px; font-size:0.82rem; cursor:pointer; font-family:inherit; color:var(--brand); font-weight:500; }
@@ -153,6 +153,9 @@
         .disp-inp { flex:1; border:none; border-bottom:1px dashed #d0c0a8; background:transparent; font-size:0.82rem; font-family:inherit; outline:none; color:#9B6B2E; padding:1px 3px; }
         .disp-inp::placeholder { color:#d0b898; font-style:italic; }
         .disp-inp:focus { border-bottom:1px solid var(--brand); }
+        .variant-inp { width:72px; border:none; border-bottom:1px dashed #d0c0a8; background:transparent; font-size:0.82rem; font-family:inherit; outline:none; color:#7a5230; padding:1px 3px; flex-shrink:0; }
+        .variant-inp::placeholder { color:#d0b898; font-style:italic; }
+        .variant-inp:focus { border-bottom:1px solid var(--brand); }
         .item-add-row { padding:4px 10px 8px 20px; }
         .prod-btn { background:none; border:none; cursor:pointer; padding:2px 6px; border-radius:4px; font-size:0.82rem; color:#c9b99a; }
         .prod-btn:hover { background:var(--brand-lt); color:var(--brand); }
@@ -164,6 +167,23 @@
         .item-row.drag-over { border-top:2px solid var(--brand); }
         .cat-block.dragging, .item-row.dragging { opacity:0.4; }
         .cat-add-row { margin-top:4px; }
+        .group-row { margin-bottom:2px; }
+        .group-hdr { display:flex; align-items:center; gap:6px; padding:3px 6px; border-radius:5px; }
+        .group-hdr:hover { background:var(--brand-lt); }
+        .toggle-btn { cursor:pointer; font-size:0.72rem; color:#9B6B2E; width:14px; flex-shrink:0; user-select:none; line-height:1; }
+        .disp-grp-inp { flex:1; border:none; border-bottom:1px dashed #d0c0a8; background:transparent; font-size:0.88rem; font-weight:600; font-family:inherit; outline:none; color:#9B6B2E; padding:1px 3px; }
+        .disp-grp-inp::placeholder { color:#d0b898; font-style:italic; }
+        .disp-grp-inp:focus { border-bottom:1px solid var(--brand); }
+        .variant-grp-inp { width:72px; border:none; border-bottom:1px dashed #d0c0a8; background:transparent; font-size:0.82rem; font-family:inherit; outline:none; color:#7a5230; padding:1px 3px; flex-shrink:0; }
+        .variant-grp-inp::placeholder { color:#d0b898; font-style:italic; }
+        .variant-grp-inp:focus { border-bottom:1px solid var(--brand); }
+        .cyber-count { background:#E8D9C4; color:#7A5220; font-size:0.70rem; padding:1px 7px; border-radius:8px; flex-shrink:0; min-width:18px; text-align:center; cursor:default; }
+        .group-items { margin-left:20px; margin-bottom:4px; border-left:2px solid #E8D9C4; padding-left:8px; }
+        .cyber-row { display:flex; align-items:center; gap:6px; padding:3px 4px; }
+        .cyber-row:hover { background:#FAF5EE; border-radius:3px; }
+        .cyber-name { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:0.80rem; color:#7a5820; }
+        .cyber-row-add { display:flex; align-items:center; gap:4px; padding:3px 4px; }
+        .pv-summary { font-size:0.76rem; color:#9B6B2E; background:#F0E8D8; padding:1px 7px; border-radius:8px; flex-shrink:0; }
 
         /* IMPORT */
         .drop-zone { border:2px dashed var(--border); border-radius:10px; padding:28px; text-align:center; cursor:pointer; transition:border-color .2s,background .2s; }
@@ -174,6 +194,12 @@
         .preview-table th { background:#FDFAF7; padding:5px 8px; text-align:left; position:sticky; top:0; border-bottom:1px solid var(--border); white-space:nowrap; color:#9B7850; }
         .preview-table td { padding:5px 8px; border-bottom:1px solid #F5EDE0; max-width:160px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
         .row-date-chg td:first-child { max-width:none; }
+        .status-chk { width:26px; height:26px; display:inline-flex; align-items:center; justify-content:center; border:2px solid #D4B896; border-radius:5px; cursor:pointer; background:#fff; color:transparent; font-size:0.9rem; transition:all 0.15s; user-select:none; flex-shrink:0; }
+        .status-chk.done { background:var(--brand-dk); border-color:var(--brand-dk); color:#fff; }
+        .status-chk:hover:not(.done) { border-color:var(--brand); background:var(--brand-lt); color:#ccc; }
+        .td-chk { text-align:center; vertical-align:middle; padding:4px!important; }
+        .th-c { text-align:center!important; }
+        .addon-inline { font-size:0.86rem; color:#5a3e28; line-height:1.7; }
         .row-ok  td:first-child { border-left:3px solid #5a7a2e; }
         .row-warn td:first-child { border-left:3px solid #c07820; }
         .imp-sum { background:#F0EBE0; border-radius:8px; padding:9px 13px; font-size:0.84rem; color:var(--brand-dk); }
@@ -246,8 +272,8 @@
         <button class="btn-today" onclick="goToday()">今天</button>
         <div class="h-right">
             <div class="view-tabs">
-                <button class="view-tab active" id="tab-orders" onclick="setViewMode('orders')">訂單</button>
-                <button class="view-tab" id="tab-production" onclick="setViewMode('production')">製作</button>
+                <button class="view-tab active" id="tab-orders" onclick="setViewMode('orders')">外場</button>
+                <button class="view-tab" id="tab-production" onclick="setViewMode('production')">內場</button>
             </div>
             <button class="btn-g" onclick="openImport()">📥 匯入 Cyberbiz</button>
             <button class="btn-p" onclick="openAdd()">＋ 新增訂單</button>
@@ -390,16 +416,14 @@
             <div style="margin-top:8px;font-size:0.77rem;color:#9B7850;">綠色 = 可匯入　橘色 = 缺出貨日期，略過　灰色 = 已存在，略過</div>
         </div>
         <div id="import-step3" style="display:none">
-            <div style="font-size:0.85rem;font-weight:700;color:#7A5220;margin-bottom:10px;">📋 品項對照</div>
-            <div style="font-size:0.82rem;color:#7a5820;margin-bottom:12px;">以下商品名稱在品項清單中未找到對應，請選擇處理方式：</div>
+            <div style="font-size:0.85rem;font-weight:700;color:#7A5220;margin-bottom:6px;">📋 品項名稱對照</div>
+            <div style="font-size:0.82rem;color:#7a5820;margin-bottom:12px;">以下 Cyberbiz 商品名稱無法自動比對，請選擇或輸入對應的關鍵字眼：</div>
             <div class="map-scroll" id="map-list"></div>
-            <div class="map-step-note">💡 套用後系統會開啟品項清單，讓您編輯工具顯示名稱。儲存品項清單後，匯入將自動完成。</div>
         </div>
         <div class="mf">
             <button class="btn-cx" onclick="resetImport()">取消</button>
-            <button class="btn-p" id="btn-show-mapping" style="display:none" onclick="showMappingStep()">品項對照 →</button>
-            <button class="btn-p" id="btn-apply-mapping" style="display:none" onclick="applyMappings()">套用並編輯品項清單</button>
-            <button class="btn-p" id="btn-skip-mapping" style="display:none" onclick="doImport()">略過，直接匯入</button>
+            <button class="btn-p" id="btn-apply-mapping" style="display:none" onclick="applyMappings()">確認對應 →</button>
+            <button class="btn-p" id="btn-skip-mapping" style="display:none" onclick="skipMapping()">略過，使用原始名稱</button>
             <button class="btn-g" id="btn-do-import" style="display:none" onclick="doImport()">確認匯入</button>
         </div>
     </div>
@@ -578,18 +602,20 @@ function productOrder(item) {
     if (!item) return 999999;
     const ni = normItem(item);
     const cats = getProducts();
-    // First pass: exact match
+    // First pass: exact match (by name or displayName)
     for (let ci = 0; ci < cats.length; ci++) {
         const cat = cats[ci];
         for (let ii = 0; ii < (cat.items||[]).length; ii++) {
-            const nFull = normItem(cat.name+' '+cat.items[ii].name);
-            const nIt   = normItem(cat.items[ii].name);
-            if (ni === nFull || ni === nIt) return ci*1000+ii;
+            const it = cat.items[ii];
+            const nFull = normItem(cat.name+' '+it.name);
+            const nIt   = normItem(it.name);
+            const nDisp = it.displayName ? normItem(it.displayName) : '';
+            if (ni === nFull || ni === nIt || (nDisp && ni === nDisp)) return ci*1000+ii;
         }
         const nCat = normItem(cat.name);
         if (ni === nCat || ni.startsWith(nCat+' ')) return ci*1000+500;
     }
-    // Second pass: prefix match (Cyberbiz appends variant suffix with various separators)
+    // Second pass: prefix match
     for (let ci = 0; ci < cats.length; ci++) {
         const cat = cats[ci];
         for (let ii = 0; ii < (cat.items||[]).length; ii++) {
@@ -672,10 +698,10 @@ async function loadData(silent=false) {
         orders = data.orders || [];
         if (data.products && data.products.length) setProducts(data.products);
         localSave(); render(); updateSyncTs();
-        if (!silent) toast('資料已載入 ✓', 'ok');
+        if (!silent) { toast('資料已載入 ✓', 'ok'); scrollToToday(); }
     } catch(e) {
         orders = JSON.parse(localStorage.getItem('boter_orders') || '[]');
-        render(); if (!silent) toast('使用本機暫存資料', '');
+        render(); if (!silent) { toast('使用本機暫存資料', ''); scrollToToday(); }
     }
 }
 function updateSyncTs() {
@@ -733,20 +759,23 @@ function fmtDate(d) {
 }
 const DAY_ZH = ['日','一','二','三','四','五','六'];
 
-function goToday() {
-    const t = new Date();
-    currentMonth = new Date(t.getFullYear(), t.getMonth(), 1);
-    calViewDate  = new Date(t.getFullYear(), t.getMonth(), 1);
-    render(); renderCalGrid();
-    const todayStr = fmtDate(t);
-    requestAnimationFrame(() => {
+function scrollToToday() {
+    const todayStr = fmtDate(new Date());
+    requestAnimationFrame(() => requestAnimationFrame(() => {
         const el = document.querySelector(`.day-card[data-date="${todayStr}"]`);
         if (el) {
             const headerH = document.querySelector('header')?.offsetHeight || 62;
             const top = el.getBoundingClientRect().top + window.scrollY - headerH - 10;
             window.scrollTo({ top, behavior: 'smooth' });
         }
-    });
+    }));
+}
+function goToday() {
+    const t = new Date();
+    currentMonth = new Date(t.getFullYear(), t.getMonth(), 1);
+    calViewDate  = new Date(t.getFullYear(), t.getMonth(), 1);
+    render(); renderCalGrid();
+    scrollToToday();
 }
 function changeMonth(dir) {
     currentMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth()+dir, 1);
@@ -793,14 +822,14 @@ function pickDay(ds) {
     currentMonth = new Date(d.getFullYear(), d.getMonth(), 1);
     document.getElementById('cal-popup').classList.remove('open');
     render(); renderCalGrid();
-    requestAnimationFrame(() => {
+    requestAnimationFrame(() => requestAnimationFrame(() => {
         const el = document.querySelector(`.day-card[data-date="${ds}"]`);
         if (el) {
             const headerH = document.querySelector('header')?.offsetHeight || 62;
             const top = el.getBoundingClientRect().top + window.scrollY - headerH - 10;
             window.scrollTo({ top, behavior: 'smooth' });
         }
-    });
+    }));
 }
 
 /* ── RENDER ── */
@@ -831,69 +860,47 @@ function render() {
         card.dataset.date = ds;
 
         if (viewMode === 'production') {
-            const mainDayOrders = dayOrders.filter(o => !isAddonItem(o.item));
-            if (!mainDayOrders.length) continue;
-            const itemMap = new Map();
-            for (const o of mainDayOrders) {
-                const disp = displayItem(o.item||'');
-                const po = productOrder(o.item||'');
-                if (itemMap.has(disp)) {
-                    itemMap.get(disp).qty += (+(o.quantity)||1);
-                } else {
-                    itemMap.set(disp, { disp, qty: +(o.quantity)||1, po });
-                }
-            }
-            const sorted = [...itemMap.values()].sort((a,b) => a.po !== b.po ? a.po - b.po : a.disp.localeCompare(b.disp, 'zh-TW'));
-            // Group items whose display name ends with -禮物 or -皇冠 by their base name
-            const FLAG_RE = /[-－‐–—\s](?:禮物|皇冠)$/;
-            const groupMap = new Map(); // base -> variants[]
-            for (const it of sorted) {
-                const m = it.disp.match(FLAG_RE);
-                if (m) {
-                    const base = it.disp.slice(0, -m[0].length);
-                    if (!groupMap.has(base)) groupMap.set(base, []);
-                    groupMap.get(base).push(it);
-                }
-            }
-            // Build rows preserving sorted order
-            const processedBases = new Set();
-            let rowsHtml = '';
-            for (const it of sorted) {
-                const m = it.disp.match(FLAG_RE);
-                if (m) {
-                    const base = it.disp.slice(0, -m[0].length);
-                    if (processedBases.has(base)) continue;
-                    processedBases.add(base);
-                    const variants = groupMap.get(base);
-                    const total = variants.reduce((s,v)=>s+v.qty, 0);
-                    variants.forEach((v, i) => {
-                        if (i === 0) {
-                            rowsHtml += `<tr><td>${esc(v.disp)}</td><td class="prod-qty">${v.qty}</td><td class="prod-total" rowspan="${variants.length}">${total}</td></tr>`;
-                        } else {
-                            rowsHtml += `<tr><td>${esc(v.disp)}</td><td class="prod-qty">${v.qty}</td></tr>`;
-                        }
-                    });
-                } else {
-                    rowsHtml += `<tr><td>${esc(it.disp)}</td><td></td><td class="prod-total">${it.qty}</td></tr>`;
-                }
-            }
+            if (!dayOrders.length) continue;
+            const innerOrders = dayOrders.filter(o => !isAddonItem(o.item));
+            const innerRows = innerOrders.map(o => {
+                const dm = o.deliveryMethod||o.timeSlot||'';
+                const delivCls = dm.includes('宅')||dm.includes('冷凍') ? 'bdg bdg-home'
+                               : dm.includes('門市')||dm.includes('取貨') ? 'bdg bdg-store'
+                               : 'bdg bdg-other';
+                const madeChk = `<span class="status-chk${o.madeStatus?' done':''}" onclick="quickMadeStatus('${o.id}',${!o.madeStatus})">✓</span>`;
+                const modBadge = o.modified ? '<span class="badge-mod">異動</span>' : '';
+                return `<tr>
+                    <td class="td-n" title="${esc(dm)}"><span class="${delivCls}">${esc(dm)}</span></td>
+                    <td class="td-chk">${madeChk}</td>
+                    <td class="td-w">${esc(displayItemBase(o))}</td>
+                    <td class="td-n" style="text-align:center">${o.quantity||1}</td>
+                    <td class="td-w">${esc(o.orderNotes||'')}</td>
+                    <td class="td-n" style="position:relative;padding-left:${o.createdDate===todayStr?'14px':'7px'}">${o.createdDate===todayStr?'<span class="dot-new"></span>':''}${esc(o.orderNumber||'')}${modBadge}</td>
+                </tr>`;
+            }).join('');
             card.innerHTML = `
                 <div class="day-hdr">
                     <span class="day-name">星期${DAY_ZH[day.getDay()]}</span>
                     <span class="day-date-lbl">${day.getMonth()+1}月${day.getDate()}日</span>
                     ${isToday ? '<span class="today-badge">今天</span>' : ''}
+                    <span class="order-count">${innerOrders.length} 筆</span>
                 </div>
-                <div style="padding:4px 4px 10px">
-                    <table class="prod-table">
-                        <thead><tr><th>品項</th><th>小計</th><th>合計</th></tr></thead>
-                        <tbody>${rowsHtml}</tbody>
-                    </table>
-                </div>`;
+                <table class="sched-table">
+                    <colgroup>
+                        <col style="width:115px"><col style="width:44px"><col style="width:180px">
+                        <col style="width:36px"><col style="width:160px"><col style="width:100px">
+                    </colgroup>
+                    <thead><tr>
+                        <th>配送方式</th><th class="th-c">製作</th><th>品項</th>
+                        <th class="th-c">數量</th><th>訂單備註</th><th>訂單編號</th>
+                    </tr></thead>
+                    <tbody>${innerRows}</tbody>
+                </table>`;
             wrap.appendChild(card);
             continue;
         }
 
-        // Separate add-ons (其他 category) from main items
+        // 外場 view: separate add-ons from main items; show add-ons inline in 加購 column
         const addonsByNum = {};
         const mainOrders = [];
         for (const o of dayOrders) {
@@ -903,42 +910,34 @@ function render() {
                 mainOrders.push(o);
             }
         }
-        const shownAddonNums = new Set();
         const rows = mainOrders.map(o => {
             const dm = o.deliveryMethod||o.timeSlot||'';
             const delivCls = dm.includes('宅')||dm.includes('冷凍') ? 'bdg bdg-home'
                            : dm.includes('門市')||dm.includes('取貨') ? 'bdg bdg-store'
                            : 'bdg bdg-other';
             const modBadge = o.modified ? '<span class="badge-mod">異動</span>' : '';
-            const pv = o.pickup||'未取貨';
-            const pbg = pv==='已自取'?'#e8f5e9':pv==='已出貨'?'#e3f2fd':'#f3f0eb';
-            const pco = pv==='已自取'?'#2e7d32':pv==='已出貨'?'#1565c0':'#9B7850';
-            const pOpts = ['未取貨','已自取','已出貨'].map(v=>`<option value="${v}"${v===pv?' selected':''}>${v}</option>`).join('');
+            const madeChk = `<span class="status-chk${o.madeStatus?' done':''}" onclick="quickMadeStatus('${o.id}',${!o.madeStatus})">✓</span>`;
+            const isShipped = o.pickup==='已出貨'||o.pickup==='已自取';
+            const shipChk = `<span class="status-chk${isShipped?' done':''}" onclick="quickShipped('${o.id}',${!isShipped})">✓</span>`;
             const addons = o.orderNumber ? (addonsByNum[o.orderNumber]||[]) : [];
-            const hasAddons = addons.length > 0;
-            const arid = hasAddons ? 'adr_'+(o.orderNumber).replace(/\W/g,'_') : '';
-            const addonBadge = hasAddons ? `<span class="badge-addon" data-arid="${arid}" onclick="toggleAddons('${arid}')" title="點擊展開加購項目">加購 ▾</span>` : '';
-            let addonRow = '';
-            if (hasAddons && !shownAddonNums.has(o.orderNumber)) {
-                shownAddonNums.add(o.orderNumber);
-                const addonHtml = addons.map(a=>`<span class="addon-item">${esc(displayItem(a.item||''))} ×${a.quantity||1}<button class="btn-act" onclick="openEdit('${a.id}')" style="padding:1px 4px;font-size:0.73rem">✏</button><button class="btn-act" onclick="delOrder('${a.id}')" style="padding:1px 4px;font-size:0.73rem">🗑</button></span>`).join('');
-                addonRow = `<tr id="${arid}" class="addon-row" style="display:none"><td colspan="10" class="addon-cell"><div class="addon-list">加購項目：${addonHtml}</div></td></tr>`;
-            }
+            const addonDisp = addons.map(a=>`${esc(displayItemBase(a))} ×${a.quantity||1}`).join('<br>');
             return `<tr>
                 <td class="td-n" title="${esc(dm)}"><span class="${delivCls}">${esc(dm)}</span></td>
-                <td class="td-w">${esc(displayItem(o.item||''))}${addonBadge}</td>
+                <td class="td-chk">${madeChk}</td>
+                <td class="td-w">${esc(displayItemBase(o))}</td>
                 <td class="td-n" style="text-align:center">${o.quantity||1}</td>
+                <td class="td-n">${esc(extractVariant(o))}</td>
+                <td class="td-w"><div class="addon-inline">${addonDisp}</div></td>
                 <td class="td-w">${esc(o.orderNotes||'')}</td>
-                <td class="td-w">${esc(o.shopNotes||'')}</td>
                 <td class="td-n" title="${esc(o.customer||'')}">${esc(o.customer||'')}</td>
                 <td class="td-n" title="${esc(o.phone||'')}">${esc(o.phone||'')}</td>
-                <td class="td-n"><select class="pickup-sel" style="background:${pbg};color:${pco}" onchange="quickPickup('${o.id}',this.value)">${pOpts}</select></td>
+                <td class="td-chk">${shipChk}</td>
                 <td class="td-n" style="position:relative;padding-left:${o.createdDate===todayStr?'14px':'7px'}">${o.createdDate===todayStr?'<span class="dot-new"></span>':''}${esc(o.orderNumber||'')}${modBadge}</td>
                 <td class="td-n"><div style="display:flex;gap:2px">
                     <button class="btn-act" onclick="openEdit('${o.id}')">✏</button>
                     <button class="btn-act" onclick="delOrder('${o.id}')">🗑</button>
                 </div></td>
-            </tr>${addonRow}`;
+            </tr>`;
         }).join('');
 
         card.innerHTML = `
@@ -946,21 +945,21 @@ function render() {
                 <span class="day-name">星期${DAY_ZH[day.getDay()]}</span>
                 <span class="day-date-lbl">${day.getMonth()+1}月${day.getDate()}日</span>
                 ${isToday?'<span class="today-badge">今天</span>':''}
-                ${dayOrders.length?`<span class="order-count">${dayOrders.length} 筆</span>`:''}
+                ${mainOrders.length?`<span class="order-count">${mainOrders.length} 筆</span>`:''}
             </div>
             ${dayOrders.length===0 ? '<div class="no-orders">— 無訂單 —</div>'
             : `<table class="sched-table">
                 <colgroup>
-                    <col style="width:118px"><col style="width:168px"><col style="width:36px">
-                    <col style="width:150px"><col style="width:110px">
-                    <col style="width:70px"><col style="width:103px">
-                    <col style="width:68px"><col style="width:88px"><col style="width:50px">
+                    <col style="width:115px"><col style="width:44px"><col style="width:150px">
+                    <col style="width:36px"><col style="width:55px"><col style="width:150px">
+                    <col style="width:130px"><col style="width:68px"><col style="width:95px">
+                    <col style="width:44px"><col style="width:90px"><col style="width:50px">
                 </colgroup>
                 <thead><tr>
-                    <th>配送方式</th><th>品項</th><th>量</th>
-                    <th>訂單備註</th><th>商家備註</th>
-                    <th>收件人</th><th>收件人電話</th>
-                    <th>取貨狀態</th><th>訂單編號</th><th></th>
+                    <th>配送方式</th><th class="th-c">製作</th><th>品項</th>
+                    <th class="th-c">數量</th><th>款式</th><th>加購</th>
+                    <th>訂單備註</th><th>收件人</th><th>收件人電話</th>
+                    <th class="th-c">出貨</th><th>訂單編號</th><th></th>
                 </tr></thead>
                 <tbody>${rows}</tbody>
             </table>`}`;
@@ -978,7 +977,8 @@ function displayItem(item) {
     for (const cat of getProducts()) {
         for (const it of (cat.items||[])) {
             const nIt = normItem(it.name);
-            if (ni === nIt || ni === normItem(cat.name+' '+it.name)) {
+            const nDisp = it.displayName ? normItem(it.displayName) : '';
+            if (ni === nIt || ni === normItem(cat.name+' '+it.name) || (nDisp && ni === nDisp)) {
                 if (it.displayName) return it.displayName;
                 if (item.startsWith(cat.name+' ')) return item.slice(cat.name.length+1);
                 return it.name;
@@ -1129,48 +1129,128 @@ function submitOrder() {
 
 /* ── PRODUCT MANAGEMENT ── */
 let tempProds = [];
+let expandedGroups = new Set();
+let _grpLookup = [];
 function openProducts() {
     tempProds = JSON.parse(JSON.stringify(getProducts()));
     renderProdTree(); openOverlay('products-overlay');
 }
 function renderProdTree() {
+    _grpLookup = [];
     const el = document.getElementById('prod-tree');
     if (!tempProds.length) { el.innerHTML = '<div style="color:#bbb;font-size:0.84rem;text-align:center;padding:12px">尚無類別，請新增</div>'; return; }
-    el.innerHTML = tempProds.map((cat,ci) => `
-        <div class="cat-block" draggable="true"
-             ondragstart="catDragStart(event,${ci})"
-             ondragover="catDragOver(event,${ci})"
-             ondrop="catDrop(event,${ci})"
-             ondragend="catDragEnd()">
+    el.innerHTML = tempProds.map((cat, ci) => {
+        const groups = new Map();
+        for (const it of (cat.items||[])) {
+            const key = it.displayName || it.name || '';
+            if (!groups.has(key)) groups.set(key, []);
+            groups.get(key).push(it);
+        }
+        const groupRows = [...groups.entries()].map(([dispName, items]) => {
+            const gidx = _grpLookup.length;
+            _grpLookup.push({ ci, dispName, items });
+            const isExp = expandedGroups.has(`${ci}::${dispName}`);
+            const pvSet = [...new Set(items.map(it=>it.prodVariant||'').filter(Boolean))];
+            const pvSummary = pvSet.length ? `<span class="pv-summary">${esc(pvSet.join('、'))}</span>` : '';
+            const cyberbizRows = isExp ? items.map(it => `
+                <div class="cyber-row">
+                    <span class="cyber-name" title="${esc(it.name)}">${esc(it.name)}</span>
+                    <span class="disp-arr" style="margin-left:4px">款式</span>
+                    <input class="variant-inp" value="${esc(it.prodVariant||'')}" placeholder="如：禮物"
+                        onchange="updateItemVariant('${esc(it.id)}',this.value.trim())">
+                    <button class="prod-btn del" title="刪除此對應名稱" onclick="delItemById('${esc(it.id)}')">✕</button>
+                </div>`).join('') +
+                `<div class="cyber-row-add">
+                    <input class="ctrl" type="text" id="cadd-${gidx}" placeholder="新增 Cyberbiz 商品名稱…"
+                        style="flex:1;font-size:0.82rem;padding:3px 6px"
+                        onkeydown="if(event.key==='Enter')addCyberbizName(${gidx})">
+                    <button class="prod-btn" title="新增" onclick="addCyberbizName(${gidx})" style="color:var(--brand)">＋</button>
+                </div>` : '';
+            return `<div class="group-row">
+                <div class="group-hdr">
+                    <span class="toggle-btn" onclick="toggleGroup(${gidx})">${isExp?'▼':'▶'}</span>
+                    <input class="disp-grp-inp" data-gidx="${gidx}" value="${esc(dispName)}" placeholder="系統顯示名稱"
+                        onchange="renameGroup(${gidx},this.value.trim())">
+                    ${pvSummary}
+                    <span class="cyber-count" title="${items.length} 個 Cyberbiz 名稱">${items.length}</span>
+                    <button class="prod-btn del" title="刪除此顯示名稱群組" onclick="delGroup(${gidx})">✕</button>
+                </div>
+                ${isExp ? `<div class="group-items">${cyberbizRows}</div>` : ''}
+            </div>`;
+        }).join('');
+        return `<div class="cat-block" draggable="true"
+                     ondragstart="catDragStart(event,${ci})"
+                     ondragover="catDragOver(event,${ci})"
+                     ondrop="catDrop(event,${ci})"
+                     ondragend="catDragEnd()">
             <div class="cat-row">
                 <span class="drag-handle" title="拖曳排序類別">⠿</span>
                 <span class="cat-label">類別</span>
                 <input class="cat-inp" value="${esc(cat.name)}" onchange="tempProds[${ci}].name=this.value.trim()" placeholder="商品類別名稱">
                 <button class="prod-btn del" onclick="delCat(${ci})">✕</button>
             </div>
-            <div class="item-rows">
-                ${(cat.items||[]).map((it,ii)=>`
-                    <div class="item-row" draggable="true"
-                         ondragstart="itemDragStart(event,${ci},${ii})"
-                         ondragover="itemDragOver(event,${ci},${ii})"
-                         ondrop="itemDrop(event,${ci},${ii})"
-                         ondragend="itemDragEnd()">
-                        <span class="drag-handle" title="拖曳排序">⠿</span>
-                        <input class="item-inp" value="${esc(it.name)}" onchange="tempProds[${ci}].items[${ii}].name=this.value.trim()" placeholder="商品名稱">
-                        <span class="disp-arr">→</span>
-                        <input class="disp-inp" data-ci="${ci}" data-ii="${ii}" value="${esc(it.displayName||'')}" placeholder="工具顯示名稱（選填）">
-                        <button class="prod-btn del" onclick="delItem(${ci},${ii})">✕</button>
-                    </div>`).join('')}
-            </div>
+            <div class="item-rows">${groupRows}</div>
             <div class="item-add-row">
                 <div style="display:flex;gap:6px">
-                    <input class="ctrl" type="text" id="item-new-${ci}" placeholder="新增商品名稱…"
+                    <input class="ctrl" type="text" id="item-new-${ci}" placeholder="新增顯示名稱…"
                         style="flex:1;padding:5px 8px;font-size:0.83rem"
                         onkeydown="if(event.key==='Enter')addItem(${ci})">
                     <button class="btn-p" onclick="addItem(${ci})" style="padding:5px 10px;font-size:0.8rem">＋ 新增品名</button>
                 </div>
             </div>
-        </div>`).join('');
+        </div>`;
+    }).join('');
+}
+function toggleGroup(gidx) {
+    const g = _grpLookup[gidx]; if (!g) return;
+    const k = `${g.ci}::${g.dispName}`;
+    if (expandedGroups.has(k)) expandedGroups.delete(k); else expandedGroups.add(k);
+    renderProdTree();
+}
+function renameGroup(gidx, newName) {
+    const g = _grpLookup[gidx]; if (!g) return;
+    if (newName === g.dispName) return;
+    for (const it of (tempProds[g.ci]?.items||[])) {
+        if (it.displayName === g.dispName) it.displayName = newName;
+    }
+    const oldK = `${g.ci}::${g.dispName}`;
+    if (expandedGroups.has(oldK)) { expandedGroups.delete(oldK); expandedGroups.add(`${g.ci}::${newName}`); }
+    renderProdTree();
+}
+function updateGroupVariant(gidx, variant) {
+    const g = _grpLookup[gidx]; if (!g) return;
+    for (const it of (tempProds[g.ci]?.items||[])) {
+        if (it.displayName === g.dispName) it.prodVariant = variant;
+    }
+}
+function updateItemVariant(itemId, variant) {
+    for (const cat of tempProds) {
+        const it = (cat.items||[]).find(i => i.id === itemId);
+        if (it) { it.prodVariant = variant; return; }
+    }
+}
+function delGroup(gidx) {
+    const g = _grpLookup[gidx]; if (!g) return;
+    if (!confirm(`刪除「${g.dispName}」及其所有 Cyberbiz 名稱對應？`)) return;
+    if (tempProds[g.ci]?.items) tempProds[g.ci].items = tempProds[g.ci].items.filter(it => it.displayName !== g.dispName);
+    expandedGroups.delete(`${g.ci}::${g.dispName}`);
+    renderProdTree();
+}
+function delItemById(itemId) {
+    for (const cat of tempProds) {
+        const idx = (cat.items||[]).findIndex(it => it.id === itemId);
+        if (idx >= 0) { cat.items.splice(idx, 1); renderProdTree(); return; }
+    }
+}
+function addCyberbizName(gidx) {
+    const g = _grpLookup[gidx]; if (!g) return;
+    const inp = document.getElementById(`cadd-${gidx}`);
+    const name = inp?.value.trim(); if (!name) return;
+    const pv = g.items[0]?.prodVariant || '';
+    if (!tempProds[g.ci].items) tempProds[g.ci].items = [];
+    tempProds[g.ci].items.push({ id:uid(), name, displayName:g.dispName, prodVariant:pv });
+    expandedGroups.add(`${g.ci}::${g.dispName}`);
+    renderProdTree();
 }
 function addCat() {
     const inp = document.getElementById('cat-new');
@@ -1240,9 +1320,9 @@ function itemCleanup() {
 function addItem(ci) {
     const inp = document.getElementById(`item-new-${ci}`);
     const name = inp.value.trim(); if (!name) return;
-    syncProdInputs();
-    if (!tempProds[ci].items) tempProds[ci].items=[];
-    tempProds[ci].items.push({id:uid(),name}); inp.value=''; renderProdTree();
+    if (!tempProds[ci].items) tempProds[ci].items = [];
+    tempProds[ci].items.push({ id:uid(), name, displayName:name, prodVariant:'' });
+    inp.value = ''; renderProdTree();
 }
 function delItem(ci,ii) {
     if(!confirm(`刪除品名「${tempProds[ci].items[ii].name}」？`)) return;
@@ -1250,23 +1330,126 @@ function delItem(ci,ii) {
 }
 function syncProdInputs() {
     document.querySelectorAll('.cat-inp').forEach((inp,ci)=>{ if(tempProds[ci]) tempProds[ci].name=inp.value.trim(); });
-    document.querySelectorAll('.disp-inp').forEach(inp=>{
-        const ci=+inp.dataset.ci, ii=+inp.dataset.ii;
-        if(tempProds[ci]?.items?.[ii]) tempProds[ci].items[ii].displayName=inp.value.trim();
+    document.querySelectorAll('.disp-grp-inp').forEach(inp=>{
+        const gidx=+inp.dataset.gidx; const g=_grpLookup[gidx]; if(!g) return;
+        const newName=inp.value.trim();
+        if (newName !== g.dispName) {
+            for (const it of (tempProds[g.ci]?.items||[])) { if(it.displayName===g.dispName) it.displayName=newName; }
+        }
+    });
+    document.querySelectorAll('.variant-grp-inp').forEach(inp=>{
+        const gidx=+inp.dataset.gidx; const g=_grpLookup[gidx]; if(!g) return;
+        for (const it of (tempProds[g.ci]?.items||[])) { if(it.displayName===g.dispName) it.prodVariant=inp.value.trim(); }
     });
 }
 function saveProducts() {
-    document.querySelectorAll('.cat-inp').forEach((inp,ci)=>{ if(tempProds[ci]) tempProds[ci].name=inp.value.trim(); });
-    document.querySelectorAll('.disp-inp').forEach(inp=>{
-        const ci=+inp.dataset.ci, ii=+inp.dataset.ii;
-        if(tempProds[ci]?.items?.[ii]) tempProds[ci].items[ii].displayName=inp.value.trim();
-    });
+    syncProdInputs();
     const cleaned = tempProds.filter(c=>c.name).map(c=>({...c,items:(c.items||[]).filter(it=>it.name)}));
     setProducts(cleaned); closeOverlay('products-overlay'); render(); toast('品項清單已儲存','ok');
     scheduleAutoSave();
     if (pendingImport) { pendingImport = false; openOverlay('import-overlay'); doImport(); }
 }
 
+/* ── SMART MATCH (import fuzzy matching) ── */
+function getItemMappings() {
+    try { return JSON.parse(localStorage.getItem('boter_item_mappings')||'{}'); } catch(e){ return {}; }
+}
+function saveItemMappings(m) { localStorage.setItem('boter_item_mappings', JSON.stringify(m)); }
+
+function fuzzyMatchItem(rawBase) {
+    if (!rawBase) return null;
+    const ni = normItem(rawBase);
+    // 1. Saved user mappings
+    const saved = getItemMappings();
+    if (saved[ni]) return saved[ni];
+    // 2. Exact match by product name
+    for (const cat of getProducts()) {
+        for (const it of (cat.items||[])) {
+            if (normItem(it.name) === ni) return it.displayName || it.name;
+        }
+    }
+    // 3. Fuzzy: find displayName/name keyword contained in rawBase (pick longest)
+    let best = null, bestLen = 0;
+    for (const cat of getProducts()) {
+        for (const it of (cat.items||[])) {
+            for (const kw of [it.displayName, it.name].filter(Boolean)) {
+                const nkw = normItem(kw);
+                if (nkw.length >= 2 && ni.includes(nkw) && nkw.length > bestLen) {
+                    best = it.displayName || it.name;
+                    bestLen = nkw.length;
+                }
+            }
+        }
+    }
+    return best;
+}
+function fuzzyMatchVariant(rawVariant) {
+    if (!rawVariant) return '';
+    const nv = normItem(rawVariant);
+    for (const v of VARIANT_TOKENS) {
+        if (nv === normItem(v) || nv.includes(normItem(v))) return v;
+    }
+    return rawVariant;
+}
+function applySmartMatch(rows) {
+    for (const r of rows) {
+        if (!r.valid || r.cancelled) { r.matched = r.item; r.matchedVariant = r.variant||''; continue; }
+        const rawBase = r.rawBase || r.item;
+        const matched = fuzzyMatchItem(rawBase);
+        r.matched = matched || null;
+        r.matchedVariant = fuzzyMatchVariant(r.rawVariant || r.variant || '');
+        r.needsMapping = !matched;
+    }
+}
+
+const VARIANT_TOKENS = ['禮物','皇冠','粉綠','粉紅'];
+function extractVariant(o) {
+    // 優先用儲存的 variant 欄位（新匯入訂單）
+    if (o.variant && o.variant.trim()) return o.variant.trim();
+    // 舊訂單：先比對品項清單的顯示名稱，再 fallback 至原始儲存名稱（normItem）
+    const disp = displayItem(o.item || '');
+    const raw  = normItem(o.item || '');
+    for (const v of VARIANT_TOKENS) {
+        for (const src of [disp, raw]) {
+            for (const sep of ['-', ' ']) {
+                if (src.endsWith(sep + v)) return v;
+            }
+        }
+    }
+    // 備案：掃描品項清單，找是否有品項 name = o.item + " " + 款式
+    const ni = normItem(o.item || '');
+    if (ni) {
+        for (const cat of getProducts()) {
+            for (const it of (cat.items||[])) {
+                // 優先用品項清單的 prodVariant 欄位（使用者手動設定的款式）
+                if (it.prodVariant && normItem(it.name) === ni) return it.prodVariant;
+                // 再試 name 後綴比對
+                const pn = normItem(it.name);
+                for (const v of VARIANT_TOKENS) {
+                    if (pn === ni + ' ' + v) return v;
+                }
+            }
+        }
+    }
+    return '';
+}
+function displayItemBase(o) {
+    const disp = displayItem(o.item || '');
+    const v = extractVariant(o);
+    if (!v) return disp;
+    for (const sep of ['-', ' ']) {
+        if (disp.endsWith(sep + v)) return disp.slice(0, -(sep.length + v.length)).trim();
+    }
+    return disp;
+}
+function quickMadeStatus(id, checked) {
+    const i = orders.findIndex(o=>o.id===id); if(i<0) return;
+    orders[i].madeStatus = checked; localSave(); render(); scheduleAutoSave();
+}
+function quickShipped(id, checked) {
+    const i = orders.findIndex(o=>o.id===id); if(i<0) return;
+    orders[i].pickup = checked ? '已出貨' : '未取貨'; localSave(); render(); scheduleAutoSave();
+}
 function quickPickup(id, val) {
     const i = orders.findIndex(o=>o.id===id); if(i<0) return;
     orders[i].pickup=val; localSave(); render(); scheduleAutoSave();
@@ -1286,69 +1469,62 @@ function findUnmappedItems() {
     return result;
 }
 function showMappingStep() {
-    const names = findUnmappedItems();
-    if (!names.length) { doImport(); return; }
-    unmappedItems = names.map(n => ({ cyberName:n, action:'skip', matchId:null, catIdx:0 }));
+    const unmatchedMap = new Map();
+    for (const r of parsedRows.filter(r=>r.valid&&!r.cancelled&&r.needsMapping)) {
+        const raw = r.rawBase || r.item;
+        if (!unmatchedMap.has(raw)) unmatchedMap.set(raw, { raw, suggested:'' });
+    }
+    unmappedItems = [...unmatchedMap.values()];
     renderMappingStep();
+    document.getElementById('import-step1').style.display = 'none';
     document.getElementById('import-step2').style.display = 'none';
     document.getElementById('import-step3').style.display = '';
-    document.getElementById('btn-show-mapping').style.display = 'none';
     document.getElementById('btn-do-import').style.display = 'none';
     document.getElementById('btn-apply-mapping').style.display = '';
     document.getElementById('btn-skip-mapping').style.display = '';
 }
 function renderMappingStep() {
-    const cats = getProducts();
-    const allProds = [];
-    cats.forEach((cat,ci) => (cat.items||[]).forEach((it,ii) =>
-        allProds.push({ label:`${cat.name}  ›  ${it.name}`, id:it.id })
-    ));
-    document.getElementById('map-list').innerHTML = unmappedItems.map((u,idx) => `
+    const keywords = [];
+    for (const cat of getProducts()) {
+        for (const it of (cat.items||[])) {
+            const kw = it.displayName || it.name;
+            if (kw && !keywords.includes(kw)) keywords.push(kw);
+        }
+    }
+    document.getElementById('map-list').innerHTML = unmappedItems.map((u, idx) => `
         <div class="map-card">
-            <div class="map-item-name">📦 ${esc(u.cyberName)}</div>
-            <div class="map-radio-group">
-                <label class="map-radio-row">
-                    <input type="radio" name="ma${idx}" value="match" onchange="unmappedItems[${idx}].action='match'">
-                    對應到現有品項（更新名稱）：
-                    <select onchange="unmappedItems[${idx}].matchId=this.value;document.querySelector('[name=ma${idx}][value=match]').checked=true;unmappedItems[${idx}].action='match'">
-                        <option value="">— 選擇品項 —</option>
-                        ${allProds.map(p=>`<option value="${esc(p.id)}">${esc(p.label)}</option>`).join('')}
-                    </select>
-                </label>
-                <label class="map-radio-row">
-                    <input type="radio" name="ma${idx}" value="add" onchange="unmappedItems[${idx}].action='add'">
-                    新增至品項清單，類別：
-                    <select onchange="unmappedItems[${idx}].catIdx=+this.value;document.querySelector('[name=ma${idx}][value=add]').checked=true;unmappedItems[${idx}].action='add'">
-                        ${cats.map((c,ci)=>`<option value="${ci}">${esc(c.name)}</option>`).join('')}
-                    </select>
-                </label>
-                <label class="map-radio-row">
-                    <input type="radio" name="ma${idx}" value="skip" checked onchange="unmappedItems[${idx}].action='skip'">
-                    略過（僅匯入，不更新品項清單）
-                </label>
+            <div class="map-item-name">📦 ${esc(u.raw)}</div>
+            <div style="display:flex;align-items:center;gap:8px;margin-top:6px">
+                <span style="font-size:0.82rem;color:#7a5820;white-space:nowrap">對應到：</span>
+                <input list="kw-list-${idx}" class="ctrl" style="flex:1;font-size:0.82rem;padding:4px 8px"
+                    placeholder="選擇或輸入關鍵字眼..."
+                    oninput="unmappedItems[${idx}].suggested=this.value.trim()">
+                <datalist id="kw-list-${idx}">
+                    ${keywords.map(kw=>`<option value="${esc(kw)}">`).join('')}
+                </datalist>
             </div>
-        </div>`).join('');
+        </div>`
+    ).join('');
 }
 function applyMappings() {
-    const cats = JSON.parse(JSON.stringify(getProducts()));
+    const mappings = getItemMappings();
     for (const u of unmappedItems) {
-        if (u.action === 'match' && u.matchId) {
-            outer: for (const cat of cats)
-                for (const it of (cat.items||[]))
-                    if (it.id === u.matchId) { it.name = u.cyberName; break outer; }
-        } else if (u.action === 'add') {
-            const ci = u.catIdx >= 0 && u.catIdx < cats.length ? u.catIdx : 0;
-            if (cats[ci]) {
-                if (!cats[ci].items) cats[ci].items = [];
-                cats[ci].items.push({ id:uid(), name:u.cyberName, displayName:'' });
+        if (!u.suggested) continue;
+        const key = normItem(u.raw);
+        mappings[key] = u.suggested;
+        for (const r of parsedRows) {
+            if (r.needsMapping && normItem(r.rawBase||r.item) === key) {
+                r.matched = u.suggested; r.needsMapping = false;
             }
         }
     }
-    setProducts(cats);
-    pendingImport = true;
-    closeOverlay('import-overlay');
-    openProducts();
-    toast('品項清單已更新，請編輯工具顯示名稱後按「儲存」完成匯入', '');
+    saveItemMappings(mappings);
+    for (const r of parsedRows) { if (r.needsMapping) r.matched = r.rawBase||r.item; }
+    showPreview();
+}
+function skipMapping() {
+    for (const r of parsedRows) { if (!r.matched) r.matched = r.rawBase||r.item; }
+    showPreview();
 }
 const COL_MAP = {
     date:           ['指定配送日期','預計出貨日','出貨日期','出貨日'],
@@ -1381,7 +1557,8 @@ function parseRows(headers, dataRows) {
         return {
             date, rawDate,
             orderNumber:    get(row, cols.orderNumber),
-            item, quantity: parseInt(get(row,cols.quantity))||1,
+            item, variant, rawBase: base, rawVariant: variant,
+            quantity: parseInt(get(row,cols.quantity))||1,
             customer:       get(row, cols.customer),
             phone:          get(row, cols.phone),
             orderNotes:     get(row, cols.orderNotes),
@@ -1411,7 +1588,6 @@ function resetImport() {
     document.getElementById('import-step2').style.display='none';
     document.getElementById('import-step3').style.display='none';
     document.getElementById('btn-do-import').style.display='none';
-    document.getElementById('btn-show-mapping').style.display='none';
     document.getElementById('btn-apply-mapping').style.display='none';
     document.getElementById('btn-skip-mapping').style.display='none';
     document.getElementById('file-input').value='';
@@ -1443,7 +1619,9 @@ async function handleFile(file) {
             headers=lines[0].split(delim).map(h=>h.replace(/^"|"$/g,'').trim());
             dataRows=lines.slice(1).map(l=>(delim===','?splitCSV(l):l.split('\t')).map(c=>c.replace(/^"|"$/g,'').trim()));
         }
-        parsedRows=parseRows(headers,dataRows); showPreview();
+        parsedRows=parseRows(headers,dataRows);
+        applySmartMatch(parsedRows);
+        if (parsedRows.some(r=>r.valid&&!r.cancelled&&r.needsMapping)) { showMappingStep(); } else { showPreview(); }
     } catch(e) { toast('解析失敗：'+e.message,'err'); console.error(e); }
 }
 function showPreview() {
@@ -1513,7 +1691,7 @@ function showPreview() {
                         ${isDup?' <span style="color:#bbb;font-size:0.72rem">已存在</span>':''}
                         ${isDateChg?' <span class="badge-date-chg">日期異動</span>':''}
                     </td>
-                    <td>${esc(r.item)}</td>
+                    <td>${esc(r.matched||r.item)}${r.matchedVariant?' <span style="color:#9B6B2E;font-size:0.82rem">/'+esc(r.matchedVariant)+'</span>':''}</td>
                     <td>${r.quantity||''}</td><td>${esc(r.customer)}</td><td>${esc(r.deliveryMethod)}</td>
                 </tr>`;
             }).join('')}
@@ -1522,13 +1700,7 @@ function showPreview() {
     document.getElementById('import-step1').style.display='none';
     document.getElementById('import-step2').style.display='';
     if (validRows.length-dupRows.length-dateChgNums.size>0||toDeleteRows.length>0||dateChgNums.size>0) {
-        const unmatched = findUnmappedItems();
-        if (unmatched.length) {
-            document.getElementById('btn-show-mapping').style.display='';
-            document.getElementById('btn-do-import').style.display='';
-        } else {
-            document.getElementById('btn-do-import').style.display='';
-        }
+        document.getElementById('btn-do-import').style.display='';
     }
 }
 function doImport() {
@@ -1552,10 +1724,10 @@ function doImport() {
     let added = 0;
     parsedRows.filter(r=>r.valid&&!r.cancelled).forEach(r=>{
         if (r.orderNumber&&existing.has(r.orderNumber)) return;
-        orders.push({id:uid(),source:'import',modified:false,pickup:'未取貨',
+        orders.push({id:uid(),source:'import',modified:false,pickup:'未取貨',madeStatus:false,
             createdDate:fmtDate(new Date()),
             date:r.date,orderNumber:r.orderNumber,deliveryMethod:r.deliveryMethod,
-            item:r.item,quantity:r.quantity,customer:r.customer,phone:r.phone,
+            item:r.matched||r.item,variant:r.matchedVariant!==undefined?r.matchedVariant:(r.variant||''),quantity:r.quantity,customer:r.customer,phone:r.phone,
             orderNotes:r.orderNotes,shopNotes:''});
         added++;
     });
