@@ -399,16 +399,14 @@
             <div style="margin-top:8px;font-size:0.77rem;color:#9B7850;">綠色 = 可匯入　橘色 = 缺出貨日期，略過　灰色 = 已存在，略過</div>
         </div>
         <div id="import-step3" style="display:none">
-            <div style="font-size:0.85rem;font-weight:700;color:#7A5220;margin-bottom:10px;">📋 品項對照</div>
-            <div style="font-size:0.82rem;color:#7a5820;margin-bottom:12px;">以下商品名稱在品項清單中未找到對應，請選擇處理方式：</div>
+            <div style="font-size:0.85rem;font-weight:700;color:#7A5220;margin-bottom:6px;">📋 品項名稱對照</div>
+            <div style="font-size:0.82rem;color:#7a5820;margin-bottom:12px;">以下 Cyberbiz 商品名稱無法自動比對，請選擇或輸入對應的關鍵字眼：</div>
             <div class="map-scroll" id="map-list"></div>
-            <div class="map-step-note">💡 套用後系統會開啟品項清單，讓您編輯工具顯示名稱。儲存品項清單後，匯入將自動完成。</div>
         </div>
         <div class="mf">
             <button class="btn-cx" onclick="resetImport()">取消</button>
-            <button class="btn-p" id="btn-show-mapping" style="display:none" onclick="showMappingStep()">品項對照 →</button>
-            <button class="btn-p" id="btn-apply-mapping" style="display:none" onclick="applyMappings()">套用並編輯品項清單</button>
-            <button class="btn-p" id="btn-skip-mapping" style="display:none" onclick="doImport()">略過，直接匯入</button>
+            <button class="btn-p" id="btn-apply-mapping" style="display:none" onclick="applyMappings()">確認對應 →</button>
+            <button class="btn-p" id="btn-skip-mapping" style="display:none" onclick="skipMapping()">略過，使用原始名稱</button>
             <button class="btn-g" id="btn-do-import" style="display:none" onclick="doImport()">確認匯入</button>
         </div>
     </div>
@@ -587,18 +585,20 @@ function productOrder(item) {
     if (!item) return 999999;
     const ni = normItem(item);
     const cats = getProducts();
-    // First pass: exact match
+    // First pass: exact match (by name or displayName)
     for (let ci = 0; ci < cats.length; ci++) {
         const cat = cats[ci];
         for (let ii = 0; ii < (cat.items||[]).length; ii++) {
-            const nFull = normItem(cat.name+' '+cat.items[ii].name);
-            const nIt   = normItem(cat.items[ii].name);
-            if (ni === nFull || ni === nIt) return ci*1000+ii;
+            const it = cat.items[ii];
+            const nFull = normItem(cat.name+' '+it.name);
+            const nIt   = normItem(it.name);
+            const nDisp = it.displayName ? normItem(it.displayName) : '';
+            if (ni === nFull || ni === nIt || (nDisp && ni === nDisp)) return ci*1000+ii;
         }
         const nCat = normItem(cat.name);
         if (ni === nCat || ni.startsWith(nCat+' ')) return ci*1000+500;
     }
-    // Second pass: prefix match (Cyberbiz appends variant suffix with various separators)
+    // Second pass: prefix match
     for (let ci = 0; ci < cats.length; ci++) {
         const cat = cats[ci];
         for (let ii = 0; ii < (cat.items||[]).length; ii++) {
@@ -957,7 +957,8 @@ function displayItem(item) {
     for (const cat of getProducts()) {
         for (const it of (cat.items||[])) {
             const nIt = normItem(it.name);
-            if (ni === nIt || ni === normItem(cat.name+' '+it.name)) {
+            const nDisp = it.displayName ? normItem(it.displayName) : '';
+            if (ni === nIt || ni === normItem(cat.name+' '+it.name) || (nDisp && ni === nDisp)) {
                 if (it.displayName) return it.displayName;
                 if (item.startsWith(cat.name+' ')) return item.slice(cat.name.length+1);
                 return it.name;
@@ -1256,6 +1257,58 @@ function saveProducts() {
     if (pendingImport) { pendingImport = false; openOverlay('import-overlay'); doImport(); }
 }
 
+/* ── SMART MATCH (import fuzzy matching) ── */
+function getItemMappings() {
+    try { return JSON.parse(localStorage.getItem('boter_item_mappings')||'{}'); } catch(e){ return {}; }
+}
+function saveItemMappings(m) { localStorage.setItem('boter_item_mappings', JSON.stringify(m)); }
+
+function fuzzyMatchItem(rawBase) {
+    if (!rawBase) return null;
+    const ni = normItem(rawBase);
+    // 1. Saved user mappings
+    const saved = getItemMappings();
+    if (saved[ni]) return saved[ni];
+    // 2. Exact match by product name
+    for (const cat of getProducts()) {
+        for (const it of (cat.items||[])) {
+            if (normItem(it.name) === ni) return it.displayName || it.name;
+        }
+    }
+    // 3. Fuzzy: find displayName/name keyword contained in rawBase (pick longest)
+    let best = null, bestLen = 0;
+    for (const cat of getProducts()) {
+        for (const it of (cat.items||[])) {
+            for (const kw of [it.displayName, it.name].filter(Boolean)) {
+                const nkw = normItem(kw);
+                if (nkw.length >= 2 && ni.includes(nkw) && nkw.length > bestLen) {
+                    best = it.displayName || it.name;
+                    bestLen = nkw.length;
+                }
+            }
+        }
+    }
+    return best;
+}
+function fuzzyMatchVariant(rawVariant) {
+    if (!rawVariant) return '';
+    const nv = normItem(rawVariant);
+    for (const v of VARIANT_TOKENS) {
+        if (nv === normItem(v) || nv.includes(normItem(v))) return v;
+    }
+    return rawVariant;
+}
+function applySmartMatch(rows) {
+    for (const r of rows) {
+        if (!r.valid || r.cancelled) { r.matched = r.item; r.matchedVariant = r.variant||''; continue; }
+        const rawBase = r.rawBase || r.item;
+        const matched = fuzzyMatchItem(rawBase);
+        r.matched = matched || null;
+        r.matchedVariant = fuzzyMatchVariant(r.rawVariant || r.variant || '');
+        r.needsMapping = !matched;
+    }
+}
+
 const VARIANT_TOKENS = ['禮物','皇冠','粉綠','粉紅'];
 function extractVariant(o) {
     // 優先用儲存的 variant 欄位（新匯入訂單）
@@ -1323,69 +1376,62 @@ function findUnmappedItems() {
     return result;
 }
 function showMappingStep() {
-    const names = findUnmappedItems();
-    if (!names.length) { doImport(); return; }
-    unmappedItems = names.map(n => ({ cyberName:n, action:'skip', matchId:null, catIdx:0 }));
+    const unmatchedMap = new Map();
+    for (const r of parsedRows.filter(r=>r.valid&&!r.cancelled&&r.needsMapping)) {
+        const raw = r.rawBase || r.item;
+        if (!unmatchedMap.has(raw)) unmatchedMap.set(raw, { raw, suggested:'' });
+    }
+    unmappedItems = [...unmatchedMap.values()];
     renderMappingStep();
+    document.getElementById('import-step1').style.display = 'none';
     document.getElementById('import-step2').style.display = 'none';
     document.getElementById('import-step3').style.display = '';
-    document.getElementById('btn-show-mapping').style.display = 'none';
     document.getElementById('btn-do-import').style.display = 'none';
     document.getElementById('btn-apply-mapping').style.display = '';
     document.getElementById('btn-skip-mapping').style.display = '';
 }
 function renderMappingStep() {
-    const cats = getProducts();
-    const allProds = [];
-    cats.forEach((cat,ci) => (cat.items||[]).forEach((it,ii) =>
-        allProds.push({ label:`${cat.name}  ›  ${it.name}`, id:it.id })
-    ));
-    document.getElementById('map-list').innerHTML = unmappedItems.map((u,idx) => `
+    const keywords = [];
+    for (const cat of getProducts()) {
+        for (const it of (cat.items||[])) {
+            const kw = it.displayName || it.name;
+            if (kw && !keywords.includes(kw)) keywords.push(kw);
+        }
+    }
+    document.getElementById('map-list').innerHTML = unmappedItems.map((u, idx) => `
         <div class="map-card">
-            <div class="map-item-name">📦 ${esc(u.cyberName)}</div>
-            <div class="map-radio-group">
-                <label class="map-radio-row">
-                    <input type="radio" name="ma${idx}" value="match" onchange="unmappedItems[${idx}].action='match'">
-                    對應到現有品項（更新名稱）：
-                    <select onchange="unmappedItems[${idx}].matchId=this.value;document.querySelector('[name=ma${idx}][value=match]').checked=true;unmappedItems[${idx}].action='match'">
-                        <option value="">— 選擇品項 —</option>
-                        ${allProds.map(p=>`<option value="${esc(p.id)}">${esc(p.label)}</option>`).join('')}
-                    </select>
-                </label>
-                <label class="map-radio-row">
-                    <input type="radio" name="ma${idx}" value="add" onchange="unmappedItems[${idx}].action='add'">
-                    新增至品項清單，類別：
-                    <select onchange="unmappedItems[${idx}].catIdx=+this.value;document.querySelector('[name=ma${idx}][value=add]').checked=true;unmappedItems[${idx}].action='add'">
-                        ${cats.map((c,ci)=>`<option value="${ci}">${esc(c.name)}</option>`).join('')}
-                    </select>
-                </label>
-                <label class="map-radio-row">
-                    <input type="radio" name="ma${idx}" value="skip" checked onchange="unmappedItems[${idx}].action='skip'">
-                    略過（僅匯入，不更新品項清單）
-                </label>
+            <div class="map-item-name">📦 ${esc(u.raw)}</div>
+            <div style="display:flex;align-items:center;gap:8px;margin-top:6px">
+                <span style="font-size:0.82rem;color:#7a5820;white-space:nowrap">對應到：</span>
+                <input list="kw-list-${idx}" class="ctrl" style="flex:1;font-size:0.82rem;padding:4px 8px"
+                    placeholder="選擇或輸入關鍵字眼..."
+                    oninput="unmappedItems[${idx}].suggested=this.value.trim()">
+                <datalist id="kw-list-${idx}">
+                    ${keywords.map(kw=>`<option value="${esc(kw)}">`).join('')}
+                </datalist>
             </div>
-        </div>`).join('');
+        </div>`
+    ).join('');
 }
 function applyMappings() {
-    const cats = JSON.parse(JSON.stringify(getProducts()));
+    const mappings = getItemMappings();
     for (const u of unmappedItems) {
-        if (u.action === 'match' && u.matchId) {
-            outer: for (const cat of cats)
-                for (const it of (cat.items||[]))
-                    if (it.id === u.matchId) { it.name = u.cyberName; break outer; }
-        } else if (u.action === 'add') {
-            const ci = u.catIdx >= 0 && u.catIdx < cats.length ? u.catIdx : 0;
-            if (cats[ci]) {
-                if (!cats[ci].items) cats[ci].items = [];
-                cats[ci].items.push({ id:uid(), name:u.cyberName, displayName:'' });
+        if (!u.suggested) continue;
+        const key = normItem(u.raw);
+        mappings[key] = u.suggested;
+        for (const r of parsedRows) {
+            if (r.needsMapping && normItem(r.rawBase||r.item) === key) {
+                r.matched = u.suggested; r.needsMapping = false;
             }
         }
     }
-    setProducts(cats);
-    pendingImport = true;
-    closeOverlay('import-overlay');
-    openProducts();
-    toast('品項清單已更新，請編輯工具顯示名稱後按「儲存」完成匯入', '');
+    saveItemMappings(mappings);
+    for (const r of parsedRows) { if (r.needsMapping) r.matched = r.rawBase||r.item; }
+    showPreview();
+}
+function skipMapping() {
+    for (const r of parsedRows) { if (!r.matched) r.matched = r.rawBase||r.item; }
+    showPreview();
 }
 const COL_MAP = {
     date:           ['指定配送日期','預計出貨日','出貨日期','出貨日'],
@@ -1418,7 +1464,8 @@ function parseRows(headers, dataRows) {
         return {
             date, rawDate,
             orderNumber:    get(row, cols.orderNumber),
-            item, variant,  quantity: parseInt(get(row,cols.quantity))||1,
+            item, variant, rawBase: base, rawVariant: variant,
+            quantity: parseInt(get(row,cols.quantity))||1,
             customer:       get(row, cols.customer),
             phone:          get(row, cols.phone),
             orderNotes:     get(row, cols.orderNotes),
@@ -1448,7 +1495,6 @@ function resetImport() {
     document.getElementById('import-step2').style.display='none';
     document.getElementById('import-step3').style.display='none';
     document.getElementById('btn-do-import').style.display='none';
-    document.getElementById('btn-show-mapping').style.display='none';
     document.getElementById('btn-apply-mapping').style.display='none';
     document.getElementById('btn-skip-mapping').style.display='none';
     document.getElementById('file-input').value='';
@@ -1480,7 +1526,9 @@ async function handleFile(file) {
             headers=lines[0].split(delim).map(h=>h.replace(/^"|"$/g,'').trim());
             dataRows=lines.slice(1).map(l=>(delim===','?splitCSV(l):l.split('\t')).map(c=>c.replace(/^"|"$/g,'').trim()));
         }
-        parsedRows=parseRows(headers,dataRows); showPreview();
+        parsedRows=parseRows(headers,dataRows);
+        applySmartMatch(parsedRows);
+        if (parsedRows.some(r=>r.valid&&!r.cancelled&&r.needsMapping)) { showMappingStep(); } else { showPreview(); }
     } catch(e) { toast('解析失敗：'+e.message,'err'); console.error(e); }
 }
 function showPreview() {
@@ -1550,7 +1598,7 @@ function showPreview() {
                         ${isDup?' <span style="color:#bbb;font-size:0.72rem">已存在</span>':''}
                         ${isDateChg?' <span class="badge-date-chg">日期異動</span>':''}
                     </td>
-                    <td>${esc(r.item)}</td>
+                    <td>${esc(r.matched||r.item)}${r.matchedVariant?' <span style="color:#9B6B2E;font-size:0.82rem">/'+esc(r.matchedVariant)+'</span>':''}</td>
                     <td>${r.quantity||''}</td><td>${esc(r.customer)}</td><td>${esc(r.deliveryMethod)}</td>
                 </tr>`;
             }).join('')}
@@ -1559,13 +1607,7 @@ function showPreview() {
     document.getElementById('import-step1').style.display='none';
     document.getElementById('import-step2').style.display='';
     if (validRows.length-dupRows.length-dateChgNums.size>0||toDeleteRows.length>0||dateChgNums.size>0) {
-        const unmatched = findUnmappedItems();
-        if (unmatched.length) {
-            document.getElementById('btn-show-mapping').style.display='';
-            document.getElementById('btn-do-import').style.display='';
-        } else {
-            document.getElementById('btn-do-import').style.display='';
-        }
+        document.getElementById('btn-do-import').style.display='';
     }
 }
 function doImport() {
@@ -1592,7 +1634,7 @@ function doImport() {
         orders.push({id:uid(),source:'import',modified:false,pickup:'未取貨',madeStatus:false,
             createdDate:fmtDate(new Date()),
             date:r.date,orderNumber:r.orderNumber,deliveryMethod:r.deliveryMethod,
-            item:r.item,variant:r.variant||'',quantity:r.quantity,customer:r.customer,phone:r.phone,
+            item:r.matched||r.item,variant:r.matchedVariant!==undefined?r.matchedVariant:(r.variant||''),quantity:r.quantity,customer:r.customer,phone:r.phone,
             orderNotes:r.orderNotes,shopNotes:''});
         added++;
     });
