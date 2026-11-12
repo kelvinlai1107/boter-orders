@@ -183,6 +183,7 @@
         .cyber-row:hover { background:#FAF5EE; border-radius:3px; }
         .cyber-name { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:0.80rem; color:#7a5820; }
         .cyber-row-add { display:flex; align-items:center; gap:4px; padding:3px 4px; }
+        .pv-summary { font-size:0.76rem; color:#9B6B2E; background:#F0E8D8; padding:1px 7px; border-radius:8px; flex-shrink:0; }
 
         /* IMPORT */
         .drop-zone { border:2px dashed var(--border); border-radius:10px; padding:28px; text-align:center; cursor:pointer; transition:border-color .2s,background .2s; }
@@ -1146,10 +1147,14 @@ function renderProdTree() {
             const gidx = _grpLookup.length;
             _grpLookup.push({ ci, dispName, items });
             const isExp = expandedGroups.has(`${ci}::${dispName}`);
-            const pv = items[0]?.prodVariant || '';
+            const pvSet = [...new Set(items.map(it=>it.prodVariant||'').filter(Boolean))];
+            const pvSummary = pvSet.length ? `<span class="pv-summary">${esc(pvSet.join('、'))}</span>` : '';
             const cyberbizRows = isExp ? items.map(it => `
                 <div class="cyber-row">
                     <span class="cyber-name" title="${esc(it.name)}">${esc(it.name)}</span>
+                    <span class="disp-arr" style="margin-left:4px">款式</span>
+                    <input class="variant-inp" value="${esc(it.prodVariant||'')}" placeholder="如：禮物"
+                        onchange="updateItemVariant('${esc(it.id)}',this.value.trim())">
                     <button class="prod-btn del" title="刪除此對應名稱" onclick="delItemById('${esc(it.id)}')">✕</button>
                 </div>`).join('') +
                 `<div class="cyber-row-add">
@@ -1163,9 +1168,7 @@ function renderProdTree() {
                     <span class="toggle-btn" onclick="toggleGroup(${gidx})">${isExp?'▼':'▶'}</span>
                     <input class="disp-grp-inp" data-gidx="${gidx}" value="${esc(dispName)}" placeholder="系統顯示名稱"
                         onchange="renameGroup(${gidx},this.value.trim())">
-                    <span class="disp-arr" title="款式">款式</span>
-                    <input class="variant-grp-inp" data-gidx="${gidx}" value="${esc(pv)}" placeholder="如：禮物"
-                        onchange="updateGroupVariant(${gidx},this.value.trim())">
+                    ${pvSummary}
                     <span class="cyber-count" title="${items.length} 個 Cyberbiz 名稱">${items.length}</span>
                     <button class="prod-btn del" title="刪除此顯示名稱群組" onclick="delGroup(${gidx})">✕</button>
                 </div>
@@ -1215,6 +1218,12 @@ function updateGroupVariant(gidx, variant) {
     const g = _grpLookup[gidx]; if (!g) return;
     for (const it of (tempProds[g.ci]?.items||[])) {
         if (it.displayName === g.dispName) it.prodVariant = variant;
+    }
+}
+function updateItemVariant(itemId, variant) {
+    for (const cat of tempProds) {
+        const it = (cat.items||[]).find(i => i.id === itemId);
+        if (it) { it.prodVariant = variant; return; }
     }
 }
 function delGroup(gidx) {
