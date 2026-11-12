@@ -1752,9 +1752,8 @@ function doImport() {
         }
     }
     localSave();
-    const first = parsedRows.find(r=>r.valid&&!r.cancelled)?.date;
-    if (first) { const d=new Date(first+'T00:00:00'); currentMonth=new Date(d.getFullYear(),d.getMonth(),1); }
     render(); renderCalGrid();
+    scrollToToday();
     if (lastImportFile) uploadExcelToSP(lastImportFile);
     const msg = [added?`匯入 ${added} 筆`:'', deleted?`刪除 ${deleted} 筆已取消訂單`:'', dateUpdated?`更新 ${dateChgNums.size} 筆配送日期`:''].filter(Boolean).join('　');
     resetImport(); toast(msg||'無變更 ✓','ok');
