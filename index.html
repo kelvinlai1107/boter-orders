@@ -279,7 +279,8 @@
             .sched-inner tbody tr td:nth-child(3) { order:2; flex:1 1 0; min-width:0; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
             .sched-inner tbody tr td:nth-child(4) { order:3; color:var(--brand-dk); font-weight:600; font-size:0.82rem; }
             .sched-inner tbody tr td:nth-child(2) { order:4; }
-            .sched-inner tbody tr td:nth-child(6) { display:none !important; }
+            .sched-inner tbody tr td:nth-child(6),
+            .sched-inner tbody tr td:nth-child(7) { display:none !important; }
             /* 內場 備註(5)：有內容才顯示，換第二行 */
             .sched-inner tbody tr td:nth-child(5) { display:none !important; }
             .sched-inner tbody tr td:nth-child(5):not(:empty) {
@@ -439,13 +440,9 @@
                     <label class="lbl">收件人電話</label>
                     <input class="ctrl" type="text" id="f-phone" placeholder="0912345678">
                 </div>
-                <div class="ff" id="f-onotes-wrap">
-                    <label class="lbl">訂單備註</label>
-                    <input class="ctrl" type="text" id="f-onotes" placeholder="來自 Cyberbiz 的備註">
-                </div>
                 <div class="ff">
-                    <label class="lbl">商家備註</label>
-                    <input class="ctrl" type="text" id="f-snotes" placeholder="店內自用備註">
+                    <label class="lbl">訂單備註</label>
+                    <input class="ctrl" type="text" id="f-onotes" placeholder="訂單備註（選填）">
                 </div>
             </div>
         </form>
@@ -951,7 +948,13 @@ function render() {
 
         if (viewMode === 'production') {
             if (!dayOrders.length) continue;
-            const innerOrders = dayOrders.filter(o => !isAddonItem(o.item));
+            const _innerSeen = new Set();
+            const innerOrders = dayOrders.filter(o => {
+                if (isAddonItem(o.item)) return false;
+                if (o.orderNumber && _innerSeen.has(o.orderNumber)) return false;
+                if (o.orderNumber) _innerSeen.add(o.orderNumber);
+                return true;
+            });
             const innerRows = innerOrders.map(o => {
                 const dm = o.deliveryMethod||o.timeSlot||'';
                 const delivCls = dm.includes('宅')||dm.includes('冷凍') ? 'bdg bdg-home'
@@ -966,6 +969,7 @@ function render() {
                     <td class="td-n" style="text-align:center">${o.quantity||1}</td>
                     <td class="td-w">${esc(o.orderNotes||'')}</td>
                     <td class="td-n" style="position:relative;padding-left:${o.createdDate===todayStr?'14px':'7px'}">${o.createdDate===todayStr?'<span class="dot-new"></span>':''}${esc(o.orderNumber||'')}${modBadge}</td>
+                    <td class="td-n"><button class="btn-act" onclick="openEdit('${o.id}')">✏</button></td>
                 </tr>`;
             }).join('');
             card.innerHTML = `
@@ -979,10 +983,11 @@ function render() {
                     <colgroup>
                         <col style="width:115px"><col style="width:44px"><col style="width:180px">
                         <col style="width:36px"><col style="width:160px"><col style="width:100px">
+                        <col style="width:44px">
                     </colgroup>
                     <thead><tr>
                         <th>配送方式</th><th class="th-c">製作</th><th>品項</th>
-                        <th class="th-c">數量</th><th>訂單備註</th><th>訂單編號</th>
+                        <th class="th-c">數量</th><th>訂單備註</th><th>訂單編號</th><th></th>
                     </tr></thead>
                     <tbody>${innerRows}</tbody>
                 </table>`;
@@ -993,11 +998,13 @@ function render() {
         // 外場 view: separate add-ons from main items; show add-ons inline in 加購 column
         const addonsByNum = {};
         const mainOrders = [];
+        const mainNumSeen = new Set();
         for (const o of dayOrders) {
-            if (o.orderNumber && isAddonItem(o.item)) {
+            if (o.orderNumber && (isAddonItem(o.item) || mainNumSeen.has(o.orderNumber))) {
                 (addonsByNum[o.orderNumber] = addonsByNum[o.orderNumber]||[]).push(o);
             } else {
                 mainOrders.push(o);
+                if (o.orderNumber) mainNumSeen.add(o.orderNumber);
             }
         }
         const rows = mainOrders.map(o => {
@@ -1134,7 +1141,6 @@ function openAdd() {
     document.getElementById('f-delivery').value = '門市取貨 (Caker Lab)';
     document.getElementById('f-delivery-other').style.display = 'none';
     document.getElementById('f-no-wrap').style.display = 'none';
-    document.getElementById('f-onotes-wrap').style.display = 'none';
     const itemInp = document.getElementById('f-item');
     itemInp.readOnly = false; itemInp.style.background = '';
     refreshDatalist(); refreshCatDropdown();
@@ -1152,7 +1158,6 @@ function openEdit(id) {
     document.getElementById('f-phone').value    = o.phone||'';
     document.getElementById('f-pickup').value   = o.pickup||'未取貨';
     document.getElementById('f-onotes').value   = o.orderNotes||'';
-    document.getElementById('f-snotes').value   = o.shopNotes||'';
     const dm = o.deliveryMethod||o.timeSlot||'';
     if (KNOWN_DM.includes(dm)) {
         document.getElementById('f-delivery').value = dm;
@@ -1164,7 +1169,6 @@ function openEdit(id) {
     }
     const isImport = o.source === 'import';
     document.getElementById('f-no-wrap').style.display = isImport ? '' : 'none';
-    document.getElementById('f-onotes-wrap').style.display = isImport ? '' : 'none';
     const itemInp = document.getElementById('f-item');
     itemInp.readOnly = false; itemInp.style.background = '';
     refreshDatalist(); refreshCatDropdown();
@@ -1207,10 +1211,9 @@ function submitOrder() {
         customer:      document.getElementById('f-customer').value,
         phone:         document.getElementById('f-phone').value,
         pickup:        document.getElementById('f-pickup').value,
-        shopNotes:     document.getElementById('f-snotes').value,
+        orderNotes:    document.getElementById('f-onotes').value,
         ...(isEdit && existingOrder?.source==='import' ? {
             orderNumber: document.getElementById('f-no').value,
-            orderNotes:  document.getElementById('f-onotes').value
         } : {})
     };
     id ? editOrder(id, d) : addOrder(d);
