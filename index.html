@@ -999,6 +999,7 @@ function render() {
                 mainOrders.push(o);
             }
         }
+        const addonsShown = new Set();
         const rows = mainOrders.map(o => {
             const dm = o.deliveryMethod||o.timeSlot||'';
             const delivCls = dm.includes('宅')||dm.includes('冷凍') ? 'bdg bdg-home'
@@ -1008,7 +1009,8 @@ function render() {
             const madeChk = `<span class="status-chk${o.madeStatus?' done':''}" onclick="quickMadeStatus('${o.id}',${!o.madeStatus})">✓</span>`;
             const isShipped = o.pickup==='已出貨'||o.pickup==='已自取';
             const shipChk = `<span class="status-chk${isShipped?' done':''}" onclick="quickShipped('${o.id}',${!isShipped})">✓</span>`;
-            const addons = o.orderNumber ? (addonsByNum[o.orderNumber]||[]) : [];
+            const addons = (o.orderNumber && !addonsShown.has(o.orderNumber)) ? (addonsByNum[o.orderNumber]||[]) : [];
+            if (o.orderNumber && addons.length) addonsShown.add(o.orderNumber);
             const addonDisp = addons.map(a=>`${esc(displayItemBase(a))} ×${a.quantity||1}`).join('<br>');
             return `<tr>
                 <td class="td-n" title="${esc(dm)}"><span class="${delivCls}">${esc(dm)}</span></td>
