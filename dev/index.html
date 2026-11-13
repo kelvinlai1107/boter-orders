@@ -245,7 +245,7 @@
             .sched-table thead { display:none; }
             .sched-table tbody { display:flex; flex-direction:column; }
             .sched-table tbody tr {
-                display:flex; flex-wrap:nowrap; align-items:center;
+                display:flex; flex-wrap:wrap; align-items:center;
                 padding:7px 12px; gap:6px;
                 border-bottom:1px solid #F5EDE0; overflow:hidden;
             }
@@ -263,19 +263,29 @@
             .sched-outer tbody tr td:nth-child(10) { order:5; }
             .sched-outer tbody tr td:nth-child(5),
             .sched-outer tbody tr td:nth-child(6),
-            .sched-outer tbody tr td:nth-child(7),
             .sched-outer tbody tr td:nth-child(8),
             .sched-outer tbody tr td:nth-child(9),
             .sched-outer tbody tr td:nth-child(11),
             .sched-outer tbody tr td:nth-child(12) { display:none !important; }
+            /* 外場 備註(7)：有內容才顯示，換第二行 */
+            .sched-outer tbody tr td:nth-child(7) { display:none !important; }
+            .sched-outer tbody tr td:nth-child(7):not(:empty) {
+                display:inline-flex !important; order:10; flex:0 0 100%;
+                font-size:0.74rem; color:#aaa; white-space:normal; overflow:visible; padding:0 0 2px;
+            }
 
             /* 內場 columns: 配送(1) 製作(2) 品項(3) 數量(4) 備註(5) 訂單號(6) */
             .sched-inner tbody tr td:nth-child(1) { order:1; }
             .sched-inner tbody tr td:nth-child(3) { order:2; flex:1 1 0; min-width:0; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
             .sched-inner tbody tr td:nth-child(4) { order:3; color:var(--brand-dk); font-weight:600; font-size:0.82rem; }
             .sched-inner tbody tr td:nth-child(2) { order:4; }
-            .sched-inner tbody tr td:nth-child(5),
             .sched-inner tbody tr td:nth-child(6) { display:none !important; }
+            /* 內場 備註(5)：有內容才顯示，換第二行 */
+            .sched-inner tbody tr td:nth-child(5) { display:none !important; }
+            .sched-inner tbody tr td:nth-child(5):not(:empty) {
+                display:inline-flex !important; order:10; flex:0 0 100%;
+                font-size:0.74rem; color:#aaa; white-space:normal; overflow:visible; padding:0 0 2px;
+            }
 
             /* 數量欄：加 × 前綴 */
             .sched-outer tbody tr td:nth-child(4)::before,
@@ -947,7 +957,7 @@ function render() {
                 const delivCls = dm.includes('宅')||dm.includes('冷凍') ? 'bdg bdg-home'
                                : dm.includes('門市')||dm.includes('取貨') ? 'bdg bdg-store'
                                : 'bdg bdg-other';
-                const madeChk = `<span class="status-chk${o.madeStatus?' done':''}" onclick="quickMadeStatus('${o.id}',${!o.madeStatus})">✓</span>`;
+                const madeChk = `<span class="status-chk${o.innerMadeStatus?' done':''}" onclick="quickInnerMade('${o.id}',${!o.innerMadeStatus})">✓</span>`;
                 const modBadge = o.modified ? '<span class="badge-mod">異動</span>' : '';
                 return `<tr>
                     <td class="td-n" title="${esc(dm)}"><span class="${delivCls}">${esc(dm)}</span></td>
@@ -1525,6 +1535,10 @@ function displayItemBase(o) {
 function quickMadeStatus(id, checked) {
     const i = orders.findIndex(o=>o.id===id); if(i<0) return;
     orders[i].madeStatus = checked; localSave(); render(); scheduleAutoSave();
+}
+function quickInnerMade(id, checked) {
+    const i = orders.findIndex(o=>o.id===id); if(i<0) return;
+    orders[i].innerMadeStatus = checked; localSave(); render(); scheduleAutoSave();
 }
 function quickShipped(id, checked) {
     const i = orders.findIndex(o=>o.id===id); if(i<0) return;
