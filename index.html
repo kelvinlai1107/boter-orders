@@ -948,13 +948,7 @@ function render() {
 
         if (viewMode === 'production') {
             if (!dayOrders.length) continue;
-            const _innerSeen = new Set();
-            const innerOrders = dayOrders.filter(o => {
-                if (isAddonItem(o.item)) return false;
-                if (o.orderNumber && _innerSeen.has(o.orderNumber)) return false;
-                if (o.orderNumber) _innerSeen.add(o.orderNumber);
-                return true;
-            });
+            const innerOrders = dayOrders.filter(o => !isAddonItem(o.item));
             const innerRows = innerOrders.map(o => {
                 const dm = o.deliveryMethod||o.timeSlot||'';
                 const delivCls = dm.includes('宅')||dm.includes('冷凍') ? 'bdg bdg-home'
@@ -998,13 +992,11 @@ function render() {
         // 外場 view: separate add-ons from main items; show add-ons inline in 加購 column
         const addonsByNum = {};
         const mainOrders = [];
-        const mainNumSeen = new Set();
         for (const o of dayOrders) {
-            if (o.orderNumber && (isAddonItem(o.item) || mainNumSeen.has(o.orderNumber))) {
+            if (o.orderNumber && isAddonItem(o.item)) {
                 (addonsByNum[o.orderNumber] = addonsByNum[o.orderNumber]||[]).push(o);
             } else {
                 mainOrders.push(o);
-                if (o.orderNumber) mainNumSeen.add(o.orderNumber);
             }
         }
         const rows = mainOrders.map(o => {
