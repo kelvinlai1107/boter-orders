@@ -848,14 +848,14 @@ const DAY_ZH = ['日','一','二','三','四','五','六'];
 
 function scrollToToday() {
     const todayStr = fmtDate(new Date());
-    requestAnimationFrame(() => requestAnimationFrame(() => {
+    setTimeout(() => {
         const el = document.querySelector(`.day-card[data-date="${todayStr}"]`);
         if (el) {
             const headerH = document.querySelector('header')?.offsetHeight || 62;
             const top = el.getBoundingClientRect().top + window.scrollY - headerH - 10;
             window.scrollTo({ top, behavior: 'smooth' });
         }
-    }));
+    }, 80);
 }
 function goToday() {
     const t = new Date();
