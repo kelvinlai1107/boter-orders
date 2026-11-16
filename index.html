@@ -1812,10 +1812,17 @@ function doImport() {
         orders = orders.filter(o=>!o.orderNumber||!cancelNums.has(o.orderNumber));
         deleted = before - orders.length;
     }
-    // 2. 匯入新訂單（跳過已存在，包含日期異動的訂單）
-    let added = 0;
+    // 2. 匯入新訂單；已存在的訂單若備註為空則補上
+    let added = 0, notesPatched = 0;
     parsedRows.filter(r=>r.valid&&!r.cancelled).forEach(r=>{
-        if (r.orderNumber&&existing.has(r.orderNumber)) return;
+        if (r.orderNumber&&existing.has(r.orderNumber)) {
+            // 補備註：現有訂單備註空白且匯入檔有備註時才覆蓋
+            if (r.orderNotes) {
+                orders.filter(o=>o.orderNumber===r.orderNumber&&!o.orderNotes)
+                    .forEach(o=>{ o.orderNotes=r.orderNotes; notesPatched++; });
+            }
+            return;
+        }
         orders.push({id:uid(),source:'import',modified:false,pickup:'未取貨',madeStatus:false,
             createdDate:fmtDate(new Date()),
             date:r.date,orderNumber:r.orderNumber,deliveryMethod:r.deliveryMethod,
@@ -1847,7 +1854,7 @@ function doImport() {
     render(); renderCalGrid();
     scrollToToday();
     if (lastImportFile) uploadExcelToSP(lastImportFile);
-    const msg = [added?`匯入 ${added} 筆`:'', deleted?`刪除 ${deleted} 筆已取消訂單`:'', dateUpdated?`更新 ${dateChgNums.size} 筆配送日期`:''].filter(Boolean).join('　');
+    const msg = [added?`匯入 ${added} 筆`:'', deleted?`刪除 ${deleted} 筆已取消訂單`:'', dateUpdated?`更新 ${dateChgNums.size} 筆配送日期`:'', notesPatched?`補上 ${notesPatched} 筆備註`:''].filter(Boolean).join('　');
     resetImport(); toast(msg||'無變更 ✓','ok');
     scheduleAutoSave();
 }
