@@ -848,14 +848,14 @@ const DAY_ZH = ['日','一','二','三','四','五','六'];
 
 function scrollToToday() {
     const todayStr = fmtDate(new Date());
-    requestAnimationFrame(() => requestAnimationFrame(() => {
+    setTimeout(() => {
         const el = document.querySelector(`.day-card[data-date="${todayStr}"]`);
         if (el) {
             const headerH = document.querySelector('header')?.offsetHeight || 62;
             const top = el.getBoundingClientRect().top + window.scrollY - headerH - 10;
             window.scrollTo({ top, behavior: 'smooth' });
         }
-    }));
+    }, 80);
 }
 function goToday() {
     const t = new Date();
@@ -999,6 +999,7 @@ function render() {
                 mainOrders.push(o);
             }
         }
+        const addonsShown = new Set();
         const rows = mainOrders.map(o => {
             const dm = o.deliveryMethod||o.timeSlot||'';
             const delivCls = dm.includes('宅')||dm.includes('冷凍') ? 'bdg bdg-home'
@@ -1008,7 +1009,8 @@ function render() {
             const madeChk = `<span class="status-chk${o.madeStatus?' done':''}" onclick="quickMadeStatus('${o.id}',${!o.madeStatus})">✓</span>`;
             const isShipped = o.pickup==='已出貨'||o.pickup==='已自取';
             const shipChk = `<span class="status-chk${isShipped?' done':''}" onclick="quickShipped('${o.id}',${!isShipped})">✓</span>`;
-            const addons = o.orderNumber ? (addonsByNum[o.orderNumber]||[]) : [];
+            const addons = (o.orderNumber && !addonsShown.has(o.orderNumber)) ? (addonsByNum[o.orderNumber]||[]) : [];
+            if (o.orderNumber && addons.length) addonsShown.add(o.orderNumber);
             const addonDisp = addons.map(a=>`${esc(displayItemBase(a))} ×${a.quantity||1}`).join('<br>');
             return `<tr>
                 <td class="td-n" title="${esc(dm)}"><span class="${delivCls}">${esc(dm)}</span></td>
@@ -1628,6 +1630,7 @@ const COL_MAP = {
     orderStatus:    ['訂單狀態','狀態']
 };
 function detectCol(headers, aliases) {
+    for (const a of aliases) { const i=headers.findIndex(h=>h===a); if(i>=0) return i; }
     for (const a of aliases) { const i=headers.findIndex(h=>h.includes(a)); if(i>=0) return i; }
     return -1;
 }
