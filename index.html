@@ -1630,6 +1630,7 @@ const COL_MAP = {
     orderStatus:    ['訂單狀態','狀態']
 };
 function detectCol(headers, aliases) {
+    for (const a of aliases) { const i=headers.findIndex(h=>h===a); if(i>=0) return i; }
     for (const a of aliases) { const i=headers.findIndex(h=>h.includes(a)); if(i>=0) return i; }
     return -1;
 }
