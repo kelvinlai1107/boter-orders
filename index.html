@@ -78,6 +78,8 @@
         .day-date-lbl { color:#888; font-size:0.86rem; }
         .today-badge { background:var(--brand); color:#fff; font-size:0.7rem; padding:2px 7px; border-radius:10px; font-weight:700; }
         .order-count { background:rgba(155,107,46,.12); color:var(--brand); font-size:0.75rem; padding:2px 8px; border-radius:10px; font-weight:600; }
+        .day-stat { font-size:0.75rem; padding:2px 8px; border-radius:10px; color:#9B7850; background:rgba(155,107,46,.08); }
+        .day-stat.all-done { color:#2e7d32; background:#e8f5e9; font-weight:600; }
         .no-orders { padding:14px; text-align:center; color:#ccc; font-size:0.84rem; }
 
         /* TABLE */
@@ -974,6 +976,7 @@ function render() {
                     <span class="day-date-lbl">${day.getMonth()+1}月${day.getDate()}日</span>
                     ${isToday ? '<span class="today-badge">今天</span>' : ''}
                     <span class="order-count">${innerOrders.length} 筆</span>
+                    ${(()=>{const done=innerOrders.filter(o=>o.innerMadeStatus).length,total=innerOrders.length;return`<span class="day-stat${done===total&&total>0?' all-done':''}">製作 ${done}/${total}</span>`;})()}
                 </div>
                 <table class="sched-table sched-inner">
                     <colgroup>
@@ -1039,6 +1042,7 @@ function render() {
                 <span class="day-date-lbl">${day.getMonth()+1}月${day.getDate()}日</span>
                 ${isToday?'<span class="today-badge">今天</span>':''}
                 ${mainOrders.length?`<span class="order-count">${mainOrders.length} 筆</span>`:''}
+                ${(()=>{if(!mainOrders.length)return'';const madeDone=mainOrders.filter(o=>o.madeStatus).length,total=mainOrders.length,shipDone=mainOrders.filter(o=>o.pickup==='已出貨'||o.pickup==='已自取').length;return`<span class="day-stat${madeDone===total?' all-done':''}">製作 ${madeDone}/${total}</span><span class="day-stat${shipDone===total?' all-done':''}">出貨 ${shipDone}/${total}</span>`;})()}
             </div>
             ${dayOrders.length===0 ? '<div class="no-orders">— 無訂單 —</div>'
             : `<table class="sched-table sched-outer">
