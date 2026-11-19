@@ -88,6 +88,8 @@
         .sched-table tr:hover td { background:#FDFAF7; }
         .td-n { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
         .td-w { white-space:normal; word-break:break-all; overflow:visible; }
+        .item-manual { color:#1565C0; font-weight:700; }
+        .notes-cell:not(:empty) { color:#8B0000; font-weight:700; }
 
         .bdg { display:inline-block; padding:2px 7px; border-radius:8px; font-size:0.80rem; white-space:nowrap; }
         .bdg-home  { background:#fff3e0; color:#b05a00; }
@@ -959,9 +961,9 @@ function render() {
                 return `<tr>
                     <td class="td-n" title="${esc(dm)}"><span class="${delivCls}">${esc(dm)}</span></td>
                     <td class="td-chk">${madeChk}</td>
-                    <td class="td-w">${esc(displayItemBase(o))}</td>
+                    <td class="td-w${!o.orderNumber?' item-manual':''}">${esc(displayItemBase(o))}</td>
                     <td class="td-n" style="text-align:center">${o.quantity||1}</td>
-                    <td class="td-w">${esc(o.orderNotes||'')}</td>
+                    <td class="td-w notes-cell">${esc(o.orderNotes||'')}</td>
                     <td class="td-n" style="position:relative;padding-left:${o.createdDate===todayStr?'14px':'7px'}">${o.createdDate===todayStr?'<span class="dot-new"></span>':''}${esc(o.orderNumber||'')}${modBadge}</td>
                     <td class="td-n"><button class="btn-act" onclick="openEdit('${o.id}')">✏</button></td>
                 </tr>`;
@@ -1015,11 +1017,11 @@ function render() {
             return `<tr>
                 <td class="td-n" title="${esc(dm)}"><span class="${delivCls}">${esc(dm)}</span></td>
                 <td class="td-chk">${madeChk}</td>
-                <td class="td-w">${esc(displayItemBase(o))}</td>
+                <td class="td-w${!o.orderNumber?' item-manual':''}">${esc(displayItemBase(o))}</td>
                 <td class="td-n" style="text-align:center">${o.quantity||1}</td>
                 <td class="td-n">${esc(extractVariant(o))}</td>
                 <td class="td-w"><div class="addon-inline">${addonDisp}</div></td>
-                <td class="td-w">${esc(o.orderNotes||'')}</td>
+                <td class="td-w notes-cell">${esc(o.orderNotes||'')}</td>
                 <td class="td-n" title="${esc(o.customer||'')}">${esc(o.customer||'')}</td>
                 <td class="td-n" title="${esc(o.phone||'')}">${esc(o.phone||'')}</td>
                 <td class="td-chk">${shipChk}</td>
