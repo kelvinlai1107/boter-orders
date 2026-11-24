@@ -540,6 +540,17 @@
     </div>
 </div>
 
+<!-- DELETED LOG MODAL -->
+<div class="overlay" id="deleted-log-overlay">
+    <div class="modal" style="max-width:720px;width:95%;">
+        <div class="modal-title">🗑 刪除紀錄</div>
+        <div id="deleted-log-body" style="max-height:60vh;overflow-y:auto;font-size:0.85rem;"></div>
+        <div class="mf">
+            <button class="btn-cx" onclick="closeOverlay('deleted-log-overlay')">關閉</button>
+        </div>
+    </div>
+</div>
+
 <!-- SETTINGS MODAL -->
 <div class="overlay" id="settings-overlay">
     <div class="modal">
@@ -556,6 +567,9 @@
             <div>
                 <label class="lbl">目前登入帳號</label>
                 <div class="ctrl" style="background:#FDFAF7;color:#9B7850;" id="s-user">—</div>
+            </div>
+            <div style="border-top:1px solid var(--border);padding-top:12px;">
+                <button onclick="openDeletedLog()" style="background:none;border:1px solid #9B7850;color:#9B7850;padding:6px 14px;border-radius:7px;cursor:pointer;font-family:inherit;font-size:0.83rem;">🗑 刪除紀錄</button>
             </div>
             <div style="border-top:1px solid var(--border);padding-top:12px;">
                 <button onclick="clearAllData()" style="background:none;border:1px solid #c0392b;color:#c0392b;padding:6px 14px;border-radius:7px;cursor:pointer;font-family:inherit;font-size:0.83rem;">⚠ 清除所有訂單資料</button>
@@ -585,7 +599,7 @@ const SCOPES = ['User.Read', 'Files.ReadWrite', 'Sites.ReadWrite.All'];
 const FILE_NAME = 'orders.json';
 
 /* ── STATE ── */
-let msal_app, account, orders = [];
+let msal_app, account, orders = [], deletedLog = [];
 let currentMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
 let calViewDate  = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
 let cfg = JSON.parse(localStorage.getItem('boter_cfg') ||
@@ -771,7 +785,7 @@ async function saveData() {
         const r = await fetch(url, {
             method: 'PUT',
             headers: { Authorization: `Bearer ${await getToken()}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ orders, products: getProducts(), savedAt: new Date().toISOString() }, null, 2)
+            body: JSON.stringify({ orders, products: getProducts(), deletedLog, savedAt: new Date().toISOString() }, null, 2)
         });
         if (!r.ok) throw new Error(r.status);
         updateSyncTs(); toast('已儲存到 SharePoint ✓', 'ok');
@@ -787,10 +801,13 @@ async function loadData(silent=false) {
         const data = await r.json();
         orders = data.orders || [];
         if (data.products && data.products.length) setProducts(data.products);
+        if (data.deletedLog) deletedLog = data.deletedLog;
+        else deletedLog = JSON.parse(localStorage.getItem('boter_deleted_log') || '[]');
         localSave(); render(); updateSyncTs();
         if (!silent) { toast('資料已載入 ✓', 'ok'); scrollToToday(); }
     } catch(e) {
         orders = JSON.parse(localStorage.getItem('boter_orders') || '[]');
+        deletedLog = JSON.parse(localStorage.getItem('boter_deleted_log') || '[]');
         render(); if (!silent) { toast('使用本機暫存資料', ''); scrollToToday(); }
     }
 }
@@ -817,9 +834,20 @@ function editOrder(id, d) {
 }
 function delOrder(id) {
     if (!confirm('確定刪除？')) return;
+    const target = orders.find(o => o.id === id);
+    if (target) {
+        deletedLog.push({
+            deletedAt: new Date().toISOString(),
+            deletedBy: account ? `${account.name}（${account.username}）` : '未登入',
+            order: { ...target }
+        });
+    }
     orders = orders.filter(o => o.id !== id); localSave(); render(); scheduleAutoSave();
 }
-function localSave() { localStorage.setItem('boter_orders', JSON.stringify(orders)); }
+function localSave() {
+    localStorage.setItem('boter_orders', JSON.stringify(orders));
+    localStorage.setItem('boter_deleted_log', JSON.stringify(deletedLog));
+}
 function clearAllData() {
     if (!confirm('確定要清除所有訂單資料？此操作無法復原！')) return;
     if (!confirm('再次確認：清除後所有訂單將消失，是否繼續？')) return;
@@ -1919,6 +1947,54 @@ function doPrint() {
     w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Boter 訂單列印 ${start} ~ ${end}</title></head><body>${body}</body></html>`);
     w.document.close(); w.print();
     closeOverlay('print-overlay');
+}
+
+/* ── DELETED LOG ── */
+function openDeletedLog() {
+    const body = document.getElementById('deleted-log-body');
+    if (!deletedLog.length) {
+        body.innerHTML = '<div style="padding:20px;text-align:center;color:#bbb;">尚無刪除紀錄</div>';
+    } else {
+        const rows = [...deletedLog].reverse().map(entry => {
+            const o = entry.order;
+            const dt = new Date(entry.deletedAt);
+            const dtStr = `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')} ${String(dt.getHours()).padStart(2,'0')}:${String(dt.getMinutes()).padStart(2,'0')}`;
+            const canRestore = !orders.some(x => x.id === o.id);
+            return `<tr style="border-bottom:1px solid #f0ebe4;">
+                <td style="padding:6px 8px;color:#888;white-space:nowrap;">${dtStr}</td>
+                <td style="padding:6px 8px;color:#888;font-size:0.78rem;">${esc(entry.deletedBy)}</td>
+                <td style="padding:6px 8px;">${esc(o.date||'')}</td>
+                <td style="padding:6px 8px;">${esc(o.orderNumber||'—')}</td>
+                <td style="padding:6px 8px;">${esc(displayItem(o.item||''))}</td>
+                <td style="padding:6px 8px;">${esc(o.customer||'')}</td>
+                <td style="padding:6px 4px;">
+                    ${canRestore ? `<button onclick="restoreOrder('${o.id}')" style="background:#e8f5e9;border:1px solid #81c784;color:#2e7d32;padding:2px 8px;border-radius:5px;cursor:pointer;font-size:0.78rem;font-family:inherit;">還原</button>` : '<span style="color:#bbb;font-size:0.78rem;">已存在</span>'}
+                </td>
+            </tr>`;
+        }).join('');
+        body.innerHTML = `<table style="width:100%;border-collapse:collapse;">
+            <thead><tr style="background:#FDFAF7;font-size:0.78rem;color:#9B7850;">
+                <th style="padding:6px 8px;text-align:left;">刪除時間</th>
+                <th style="padding:6px 8px;text-align:left;">操作者</th>
+                <th style="padding:6px 8px;text-align:left;">出貨日</th>
+                <th style="padding:6px 8px;text-align:left;">訂單編號</th>
+                <th style="padding:6px 8px;text-align:left;">品項</th>
+                <th style="padding:6px 8px;text-align:left;">客人</th>
+                <th style="padding:6px 8px;"></th>
+            </tr></thead>
+            <tbody>${rows}</tbody>
+        </table>`;
+    }
+    closeOverlay('settings-overlay');
+    openOverlay('deleted-log-overlay');
+}
+function restoreOrder(id) {
+    const entry = deletedLog.find(e => e.order.id === id);
+    if (!entry) return;
+    orders.push({ ...entry.order });
+    localSave(); render(); scheduleAutoSave();
+    toast('已還原訂單 ✓', 'ok');
+    openDeletedLog();
 }
 
 /* ── SETTINGS ── */
