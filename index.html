@@ -540,24 +540,17 @@
     </div>
 </div>
 
-<!-- EDIT LOG MODAL -->
-<div class="overlay" id="edit-log-overlay">
-    <div class="modal" style="max-width:800px;width:95%;">
-        <div class="modal-title">📝 編輯紀錄</div>
-        <div id="edit-log-body" style="max-height:60vh;overflow-y:auto;font-size:0.85rem;"></div>
-        <div class="mf">
-            <button class="btn-cx" onclick="closeOverlay('edit-log-overlay')">關閉</button>
+<!-- ACTIVITY LOG MODAL -->
+<div class="overlay" id="activity-log-overlay">
+    <div class="modal" style="max-width:820px;width:95%;">
+        <div class="modal-title">📋 操作紀錄</div>
+        <div style="display:flex;gap:8px;margin-bottom:12px;">
+            <button id="log-tab-edit" onclick="switchLogTab('edit')" style="padding:5px 16px;border-radius:7px;border:1px solid #9B7850;cursor:pointer;font-family:inherit;font-size:0.85rem;background:#9B7850;color:#fff;">📝 編輯紀錄</button>
+            <button id="log-tab-del" onclick="switchLogTab('del')" style="padding:5px 16px;border-radius:7px;border:1px solid #9B7850;cursor:pointer;font-family:inherit;font-size:0.85rem;background:#fff;color:#9B7850;">🗑 刪除紀錄</button>
         </div>
-    </div>
-</div>
-
-<!-- DELETED LOG MODAL -->
-<div class="overlay" id="deleted-log-overlay">
-    <div class="modal" style="max-width:720px;width:95%;">
-        <div class="modal-title">🗑 刪除紀錄</div>
-        <div id="deleted-log-body" style="max-height:60vh;overflow-y:auto;font-size:0.85rem;"></div>
+        <div id="activity-log-body" style="max-height:60vh;overflow-y:auto;font-size:0.85rem;"></div>
         <div class="mf">
-            <button class="btn-cx" onclick="closeOverlay('deleted-log-overlay')">關閉</button>
+            <button class="btn-cx" onclick="closeOverlay('activity-log-overlay')">關閉</button>
         </div>
     </div>
 </div>
@@ -580,8 +573,7 @@
                 <div class="ctrl" style="background:#FDFAF7;color:#9B7850;" id="s-user">—</div>
             </div>
             <div style="border-top:1px solid var(--border);padding-top:12px;">
-                <button onclick="openDeletedLog()" style="background:none;border:1px solid #9B7850;color:#9B7850;padding:6px 14px;border-radius:7px;cursor:pointer;font-family:inherit;font-size:0.83rem;">🗑 刪除紀錄</button>
-                <button onclick="openEditLog()" style="background:none;border:1px solid #9B7850;color:#9B7850;padding:6px 14px;border-radius:7px;cursor:pointer;font-family:inherit;font-size:0.83rem;margin-left:8px;">📝 編輯紀錄</button>
+                <button onclick="openActivityLog('edit')" style="background:none;border:1px solid #9B7850;color:#9B7850;padding:6px 14px;border-radius:7px;cursor:pointer;font-family:inherit;font-size:0.83rem;">📋 操作紀錄</button>
             </div>
             <div style="border-top:1px solid var(--border);padding-top:12px;">
                 <button onclick="clearAllData()" style="background:none;border:1px solid #c0392b;color:#c0392b;padding:6px 14px;border-radius:7px;cursor:pointer;font-family:inherit;font-size:0.83rem;">⚠ 清除所有訂單資料</button>
@@ -1987,91 +1979,85 @@ function doPrint() {
     closeOverlay('print-overlay');
 }
 
-/* ── EDIT LOG ── */
+/* ── ACTIVITY LOG ── */
 const FIELD_LABEL = {
     date:'出貨日', orderNumber:'訂單編號', deliveryMethod:'配送方式',
     item:'品項', quantity:'數量', customer:'收件人', phone:'電話',
     orderNotes:'訂單備註', shopNotes:'商家備註',
     pickup:'出貨狀態', madeStatus:'外場製作', innerMadeStatus:'內場製作'
 };
-function openEditLog() {
-    const body = document.getElementById('edit-log-body');
-    if (!editLog.length) {
-        body.innerHTML = '<div style="padding:20px;text-align:center;color:#bbb;">尚無編輯紀錄</div>';
-    } else {
-        const rows = [...editLog].reverse().map(entry => {
-            const dt = new Date(entry.editedAt);
-            const dtStr = `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')} ${String(dt.getHours()).padStart(2,'0')}:${String(dt.getMinutes()).padStart(2,'0')}`;
-            const ref = entry.orderRef;
-            const changeLines = Object.entries(entry.changes).map(([f, {from, to}]) => {
-                const label = FIELD_LABEL[f] || f;
-                const fromStr = from === true ? '已完成' : from === false ? '未完成' : esc(String(from)) || '（空）';
-                const toStr = to === true ? '已完成' : to === false ? '未完成' : esc(String(to)) || '（空）';
-                return `<div style="color:#666;font-size:0.78rem;padding:1px 0;">${label}：<span style="color:#c0392b;">${fromStr}</span> → <span style="color:#2e7d32;">${toStr}</span></div>`;
-            }).join('');
-            return `<tr style="border-bottom:1px solid #f0ebe4;vertical-align:top;">
-                <td style="padding:6px 8px;color:#888;white-space:nowrap;">${dtStr}</td>
-                <td style="padding:6px 8px;color:#888;font-size:0.78rem;white-space:nowrap;">${esc(entry.editedBy)}</td>
-                <td style="padding:6px 8px;white-space:nowrap;">${esc(ref.orderNumber||'—')}</td>
-                <td style="padding:6px 8px;white-space:nowrap;">${esc(displayItem(ref.item||''))}</td>
-                <td style="padding:6px 8px;white-space:nowrap;">${esc(ref.customer||'')}</td>
-                <td style="padding:6px 8px;">${changeLines}</td>
-            </tr>`;
-        }).join('');
-        body.innerHTML = `<table style="width:100%;border-collapse:collapse;">
-            <thead><tr style="background:#FDFAF7;font-size:0.78rem;color:#9B7850;">
-                <th style="padding:6px 8px;text-align:left;">編輯時間</th>
-                <th style="padding:6px 8px;text-align:left;">操作者</th>
-                <th style="padding:6px 8px;text-align:left;">訂單編號</th>
-                <th style="padding:6px 8px;text-align:left;">品項</th>
-                <th style="padding:6px 8px;text-align:left;">客人</th>
-                <th style="padding:6px 8px;text-align:left;">異動內容</th>
-            </tr></thead>
-            <tbody>${rows}</tbody>
-        </table>`;
-    }
-    closeOverlay('settings-overlay');
-    openOverlay('edit-log-overlay');
+let _logTab = 'edit';
+function fmtDt(iso) {
+    const dt = new Date(iso);
+    return `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')} ${String(dt.getHours()).padStart(2,'0')}:${String(dt.getMinutes()).padStart(2,'0')}`;
 }
-
-/* ── DELETED LOG ── */
-function openDeletedLog() {
-    const body = document.getElementById('deleted-log-body');
-    if (!deletedLog.length) {
-        body.innerHTML = '<div style="padding:20px;text-align:center;color:#bbb;">尚無刪除紀錄</div>';
-    } else {
-        const rows = [...deletedLog].reverse().map(entry => {
-            const o = entry.order;
-            const dt = new Date(entry.deletedAt);
-            const dtStr = `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')} ${String(dt.getHours()).padStart(2,'0')}:${String(dt.getMinutes()).padStart(2,'0')}`;
-            const canRestore = !orders.some(x => x.id === o.id);
-            return `<tr style="border-bottom:1px solid #f0ebe4;">
-                <td style="padding:6px 8px;color:#888;white-space:nowrap;">${dtStr}</td>
-                <td style="padding:6px 8px;color:#888;font-size:0.78rem;">${esc(entry.deletedBy)}</td>
-                <td style="padding:6px 8px;">${esc(o.date||'')}</td>
-                <td style="padding:6px 8px;">${esc(o.orderNumber||'—')}</td>
-                <td style="padding:6px 8px;">${esc(displayItem(o.item||''))}</td>
-                <td style="padding:6px 8px;">${esc(o.customer||'')}</td>
-                <td style="padding:6px 4px;">
-                    ${canRestore ? `<button onclick="restoreOrder('${o.id}')" style="background:#e8f5e9;border:1px solid #81c784;color:#2e7d32;padding:2px 8px;border-radius:5px;cursor:pointer;font-size:0.78rem;font-family:inherit;">還原</button>` : '<span style="color:#bbb;font-size:0.78rem;">已存在</span>'}
-                </td>
-            </tr>`;
+function renderEditTab() {
+    if (!editLog.length) return '<div style="padding:20px;text-align:center;color:#bbb;">尚無編輯紀錄</div>';
+    const rows = [...editLog].reverse().map(entry => {
+        const ref = entry.orderRef;
+        const changeLines = Object.entries(entry.changes).map(([f, {from, to}]) => {
+            const label = FIELD_LABEL[f] || f;
+            const fromStr = from === true ? '已完成' : from === false ? '未完成' : esc(String(from)) || '（空）';
+            const toStr = to === true ? '已完成' : to === false ? '未完成' : esc(String(to)) || '（空）';
+            return `<div style="color:#666;font-size:0.78rem;padding:1px 0;">${label}：<span style="color:#c0392b;">${fromStr}</span> → <span style="color:#2e7d32;">${toStr}</span></div>`;
         }).join('');
-        body.innerHTML = `<table style="width:100%;border-collapse:collapse;">
-            <thead><tr style="background:#FDFAF7;font-size:0.78rem;color:#9B7850;">
-                <th style="padding:6px 8px;text-align:left;">刪除時間</th>
-                <th style="padding:6px 8px;text-align:left;">操作者</th>
-                <th style="padding:6px 8px;text-align:left;">出貨日</th>
-                <th style="padding:6px 8px;text-align:left;">訂單編號</th>
-                <th style="padding:6px 8px;text-align:left;">品項</th>
-                <th style="padding:6px 8px;text-align:left;">客人</th>
-                <th style="padding:6px 8px;"></th>
-            </tr></thead>
-            <tbody>${rows}</tbody>
-        </table>`;
-    }
+        return `<tr style="border-bottom:1px solid #f0ebe4;vertical-align:top;">
+            <td style="padding:6px 8px;color:#888;white-space:nowrap;">${fmtDt(entry.editedAt)}</td>
+            <td style="padding:6px 8px;color:#888;font-size:0.78rem;white-space:nowrap;">${esc(entry.editedBy)}</td>
+            <td style="padding:6px 8px;white-space:nowrap;">${esc(ref.orderNumber||'—')}</td>
+            <td style="padding:6px 8px;white-space:nowrap;">${esc(displayItem(ref.item||''))}</td>
+            <td style="padding:6px 8px;white-space:nowrap;">${esc(ref.customer||'')}</td>
+            <td style="padding:6px 8px;">${changeLines}</td>
+        </tr>`;
+    }).join('');
+    return `<table style="width:100%;border-collapse:collapse;">
+        <thead><tr style="background:#FDFAF7;font-size:0.78rem;color:#9B7850;">
+            <th style="padding:6px 8px;text-align:left;">編輯時間</th>
+            <th style="padding:6px 8px;text-align:left;">操作者</th>
+            <th style="padding:6px 8px;text-align:left;">訂單編號</th>
+            <th style="padding:6px 8px;text-align:left;">品項</th>
+            <th style="padding:6px 8px;text-align:left;">客人</th>
+            <th style="padding:6px 8px;text-align:left;">異動內容</th>
+        </tr></thead><tbody>${rows}</tbody></table>`;
+}
+function renderDelTab() {
+    if (!deletedLog.length) return '<div style="padding:20px;text-align:center;color:#bbb;">尚無刪除紀錄</div>';
+    const rows = [...deletedLog].reverse().map(entry => {
+        const o = entry.order;
+        const canRestore = !orders.some(x => x.id === o.id);
+        return `<tr style="border-bottom:1px solid #f0ebe4;">
+            <td style="padding:6px 8px;color:#888;white-space:nowrap;">${fmtDt(entry.deletedAt)}</td>
+            <td style="padding:6px 8px;color:#888;font-size:0.78rem;">${esc(entry.deletedBy)}</td>
+            <td style="padding:6px 8px;">${esc(o.date||'')}</td>
+            <td style="padding:6px 8px;">${esc(o.orderNumber||'—')}</td>
+            <td style="padding:6px 8px;">${esc(displayItem(o.item||''))}</td>
+            <td style="padding:6px 8px;">${esc(o.customer||'')}</td>
+            <td style="padding:6px 4px;">
+                ${canRestore ? `<button onclick="restoreOrder('${o.id}')" style="background:#e8f5e9;border:1px solid #81c784;color:#2e7d32;padding:2px 8px;border-radius:5px;cursor:pointer;font-size:0.78rem;font-family:inherit;">還原</button>` : '<span style="color:#bbb;font-size:0.78rem;">已存在</span>'}
+            </td>
+        </tr>`;
+    }).join('');
+    return `<table style="width:100%;border-collapse:collapse;">
+        <thead><tr style="background:#FDFAF7;font-size:0.78rem;color:#9B7850;">
+            <th style="padding:6px 8px;text-align:left;">刪除時間</th>
+            <th style="padding:6px 8px;text-align:left;">操作者</th>
+            <th style="padding:6px 8px;text-align:left;">出貨日</th>
+            <th style="padding:6px 8px;text-align:left;">訂單編號</th>
+            <th style="padding:6px 8px;text-align:left;">品項</th>
+            <th style="padding:6px 8px;text-align:left;">客人</th>
+            <th style="padding:6px 8px;"></th>
+        </tr></thead><tbody>${rows}</tbody></table>`;
+}
+function switchLogTab(tab) {
+    _logTab = tab;
+    document.getElementById('log-tab-edit').style.cssText += tab==='edit' ? ';background:#9B7850;color:#fff' : ';background:#fff;color:#9B7850';
+    document.getElementById('log-tab-del').style.cssText  += tab==='del'  ? ';background:#9B7850;color:#fff' : ';background:#fff;color:#9B7850';
+    document.getElementById('activity-log-body').innerHTML = tab==='edit' ? renderEditTab() : renderDelTab();
+}
+function openActivityLog(tab='edit') {
     closeOverlay('settings-overlay');
-    openOverlay('deleted-log-overlay');
+    openOverlay('activity-log-overlay');
+    switchLogTab(tab);
 }
 function restoreOrder(id) {
     const entry = deletedLog.find(e => e.order.id === id);
@@ -2079,7 +2065,7 @@ function restoreOrder(id) {
     orders.push({ ...entry.order });
     localSave(); render(); scheduleAutoSave();
     toast('已還原訂單 ✓', 'ok');
-    openDeletedLog();
+    switchLogTab('del');
 }
 
 /* ── SETTINGS ── */
