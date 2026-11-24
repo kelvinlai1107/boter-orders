@@ -540,6 +540,17 @@
     </div>
 </div>
 
+<!-- EDIT LOG MODAL -->
+<div class="overlay" id="edit-log-overlay">
+    <div class="modal" style="max-width:800px;width:95%;">
+        <div class="modal-title">📝 編輯紀錄</div>
+        <div id="edit-log-body" style="max-height:60vh;overflow-y:auto;font-size:0.85rem;"></div>
+        <div class="mf">
+            <button class="btn-cx" onclick="closeOverlay('edit-log-overlay')">關閉</button>
+        </div>
+    </div>
+</div>
+
 <!-- DELETED LOG MODAL -->
 <div class="overlay" id="deleted-log-overlay">
     <div class="modal" style="max-width:720px;width:95%;">
@@ -570,6 +581,7 @@
             </div>
             <div style="border-top:1px solid var(--border);padding-top:12px;">
                 <button onclick="openDeletedLog()" style="background:none;border:1px solid #9B7850;color:#9B7850;padding:6px 14px;border-radius:7px;cursor:pointer;font-family:inherit;font-size:0.83rem;">🗑 刪除紀錄</button>
+                <button onclick="openEditLog()" style="background:none;border:1px solid #9B7850;color:#9B7850;padding:6px 14px;border-radius:7px;cursor:pointer;font-family:inherit;font-size:0.83rem;margin-left:8px;">📝 編輯紀錄</button>
             </div>
             <div style="border-top:1px solid var(--border);padding-top:12px;">
                 <button onclick="clearAllData()" style="background:none;border:1px solid #c0392b;color:#c0392b;padding:6px 14px;border-radius:7px;cursor:pointer;font-family:inherit;font-size:0.83rem;">⚠ 清除所有訂單資料</button>
@@ -599,7 +611,7 @@ const SCOPES = ['User.Read', 'Files.ReadWrite', 'Sites.ReadWrite.All'];
 const FILE_NAME = 'orders.json';
 
 /* ── STATE ── */
-let msal_app, account, orders = [], deletedLog = [];
+let msal_app, account, orders = [], deletedLog = [], editLog = [];
 let currentMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
 let calViewDate  = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
 let cfg = JSON.parse(localStorage.getItem('boter_cfg') ||
@@ -785,7 +797,7 @@ async function saveData() {
         const r = await fetch(url, {
             method: 'PUT',
             headers: { Authorization: `Bearer ${await getToken()}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ orders, products: getProducts(), deletedLog, savedAt: new Date().toISOString() }, null, 2)
+            body: JSON.stringify({ orders, products: getProducts(), deletedLog, editLog, savedAt: new Date().toISOString() }, null, 2)
         });
         if (!r.ok) throw new Error(r.status);
         updateSyncTs(); toast('已儲存到 SharePoint ✓', 'ok');
@@ -803,11 +815,14 @@ async function loadData(silent=false) {
         if (data.products && data.products.length) setProducts(data.products);
         if (data.deletedLog) deletedLog = data.deletedLog;
         else deletedLog = JSON.parse(localStorage.getItem('boter_deleted_log') || '[]');
+        if (data.editLog) editLog = data.editLog;
+        else editLog = JSON.parse(localStorage.getItem('boter_edit_log') || '[]');
         localSave(); render(); updateSyncTs();
         if (!silent) { toast('資料已載入 ✓', 'ok'); scrollToToday(); }
     } catch(e) {
         orders = JSON.parse(localStorage.getItem('boter_orders') || '[]');
         deletedLog = JSON.parse(localStorage.getItem('boter_deleted_log') || '[]');
+        editLog = JSON.parse(localStorage.getItem('boter_edit_log') || '[]');
         render(); if (!silent) { toast('使用本機暫存資料', ''); scrollToToday(); }
     }
 }
@@ -824,10 +839,25 @@ function addOrder(d) {
 }
 function editOrder(id, d) {
     const i = orders.findIndex(o => o.id === id); if (i < 0) return;
+    const trackFields = ['date','orderNumber','deliveryMethod','item','quantity','customer','phone','orderNotes','shopNotes','pickup','madeStatus','innerMadeStatus'];
+    const changes = {};
+    trackFields.forEach(f => {
+        if (d[f] !== undefined && String(d[f]) !== String(orders[i][f] ?? '')) {
+            changes[f] = { from: orders[i][f] ?? '', to: d[f] };
+        }
+    });
+    if (Object.keys(changes).length) {
+        editLog.push({
+            editedAt: new Date().toISOString(),
+            editedBy: account ? `${account.name}（${account.username}）` : '未登入',
+            orderRef: { id, orderNumber: orders[i].orderNumber||'', item: orders[i].item||'', customer: orders[i].customer||'' },
+            changes
+        });
+    }
     let newModified = orders[i].modified;
     if (!newModified) {
-        const trackFields = ['date','orderNumber','deliveryMethod','item','quantity','customer','phone','orderNotes','shopNotes'];
-        newModified = trackFields.some(f => d[f] !== undefined && String(d[f]) !== String(orders[i][f] ?? ''));
+        const contentFields = ['date','orderNumber','deliveryMethod','item','quantity','customer','phone','orderNotes','shopNotes'];
+        newModified = contentFields.some(f => d[f] !== undefined && String(d[f]) !== String(orders[i][f] ?? ''));
     }
     orders[i] = { ...orders[i], ...d, modified: newModified };
     localSave(); render(); scheduleAutoSave();
@@ -847,6 +877,7 @@ function delOrder(id) {
 function localSave() {
     localStorage.setItem('boter_orders', JSON.stringify(orders));
     localStorage.setItem('boter_deleted_log', JSON.stringify(deletedLog));
+    localStorage.setItem('boter_edit_log', JSON.stringify(editLog));
 }
 function clearAllData() {
     if (!confirm('確定要清除所有訂單資料？此操作無法復原！')) return;
@@ -1954,6 +1985,53 @@ function doPrint() {
     w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Boter 訂單列印 ${start} ~ ${end}</title></head><body>${body}</body></html>`);
     w.document.close(); w.print();
     closeOverlay('print-overlay');
+}
+
+/* ── EDIT LOG ── */
+const FIELD_LABEL = {
+    date:'出貨日', orderNumber:'訂單編號', deliveryMethod:'配送方式',
+    item:'品項', quantity:'數量', customer:'收件人', phone:'電話',
+    orderNotes:'訂單備註', shopNotes:'商家備註',
+    pickup:'出貨狀態', madeStatus:'外場製作', innerMadeStatus:'內場製作'
+};
+function openEditLog() {
+    const body = document.getElementById('edit-log-body');
+    if (!editLog.length) {
+        body.innerHTML = '<div style="padding:20px;text-align:center;color:#bbb;">尚無編輯紀錄</div>';
+    } else {
+        const rows = [...editLog].reverse().map(entry => {
+            const dt = new Date(entry.editedAt);
+            const dtStr = `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')} ${String(dt.getHours()).padStart(2,'0')}:${String(dt.getMinutes()).padStart(2,'0')}`;
+            const ref = entry.orderRef;
+            const changeLines = Object.entries(entry.changes).map(([f, {from, to}]) => {
+                const label = FIELD_LABEL[f] || f;
+                const fromStr = from === true ? '已完成' : from === false ? '未完成' : esc(String(from)) || '（空）';
+                const toStr = to === true ? '已完成' : to === false ? '未完成' : esc(String(to)) || '（空）';
+                return `<div style="color:#666;font-size:0.78rem;padding:1px 0;">${label}：<span style="color:#c0392b;">${fromStr}</span> → <span style="color:#2e7d32;">${toStr}</span></div>`;
+            }).join('');
+            return `<tr style="border-bottom:1px solid #f0ebe4;vertical-align:top;">
+                <td style="padding:6px 8px;color:#888;white-space:nowrap;">${dtStr}</td>
+                <td style="padding:6px 8px;color:#888;font-size:0.78rem;white-space:nowrap;">${esc(entry.editedBy)}</td>
+                <td style="padding:6px 8px;white-space:nowrap;">${esc(ref.orderNumber||'—')}</td>
+                <td style="padding:6px 8px;white-space:nowrap;">${esc(displayItem(ref.item||''))}</td>
+                <td style="padding:6px 8px;white-space:nowrap;">${esc(ref.customer||'')}</td>
+                <td style="padding:6px 8px;">${changeLines}</td>
+            </tr>`;
+        }).join('');
+        body.innerHTML = `<table style="width:100%;border-collapse:collapse;">
+            <thead><tr style="background:#FDFAF7;font-size:0.78rem;color:#9B7850;">
+                <th style="padding:6px 8px;text-align:left;">編輯時間</th>
+                <th style="padding:6px 8px;text-align:left;">操作者</th>
+                <th style="padding:6px 8px;text-align:left;">訂單編號</th>
+                <th style="padding:6px 8px;text-align:left;">品項</th>
+                <th style="padding:6px 8px;text-align:left;">客人</th>
+                <th style="padding:6px 8px;text-align:left;">異動內容</th>
+            </tr></thead>
+            <tbody>${rows}</tbody>
+        </table>`;
+    }
+    closeOverlay('settings-overlay');
+    openOverlay('edit-log-overlay');
 }
 
 /* ── DELETED LOG ── */
