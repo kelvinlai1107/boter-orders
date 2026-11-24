@@ -1999,8 +1999,8 @@ function renderEditTab() {
             const label = FIELD_LABEL[f] || f;
             const fromStr = from === true ? '已完成' : from === false ? '未完成' : esc(String(from)) || '（空）';
             const toStr = to === true ? '已完成' : to === false ? '未完成' : esc(String(to)) || '（空）';
-            return `<div style="color:#666;font-size:0.78rem;padding:1px 0;">${label}：<span style="color:#c0392b;">${fromStr}</span> → <span style="color:#2e7d32;">${toStr}</span></div>`;
-        }).join('');
+            return `<span style="color:#666;font-size:0.78rem;white-space:nowrap;">${label}：<span style="color:#c0392b;">${fromStr}</span> → <span style="color:#2e7d32;">${toStr}</span></span>`;
+        }).join('<span style="color:#ccc;margin:0 6px;">｜</span>');
         return `<tr style="border-bottom:1px solid #f0ebe4;vertical-align:top;">
             <td style="padding:6px 8px;color:#888;white-space:nowrap;">${fmtDt(entry.editedAt)}</td>
             <td style="padding:6px 8px;color:#888;font-size:0.78rem;white-space:nowrap;">${esc(entry.editedBy)}</td>
