@@ -1847,7 +1847,14 @@ function doImport() {
         orders = orders.filter(o=>!o.orderNumber||!cancelNums.has(o.orderNumber));
         deleted = before - orders.length;
     }
-    // 2. 匯入新訂單；已存在的訂單若備註為空則補上
+    // 2. 匯入前，先清除孤兒加購品（主品項不存在但加購品還留著的訂單號碼）
+    const reimportNums = new Set(
+        parsedRows.filter(r=>r.valid&&!r.cancelled&&r.orderNumber&&!existing.has(r.orderNumber)).map(r=>r.orderNumber)
+    );
+    if (reimportNums.size > 0) {
+        orders = orders.filter(o=>!o.orderNumber||!reimportNums.has(o.orderNumber));
+    }
+    // 匯入新訂單；已存在的訂單若備註為空則補上
     let added = 0, notesPatched = 0;
     parsedRows.filter(r=>r.valid&&!r.cancelled).forEach(r=>{
         if (r.orderNumber&&existing.has(r.orderNumber)) {
