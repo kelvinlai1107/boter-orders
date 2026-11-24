@@ -2027,11 +2027,11 @@ function renderDelTab() {
         const canRestore = !orders.some(x => x.id === o.id);
         return `<tr style="border-bottom:1px solid #f0ebe4;">
             <td style="padding:6px 8px;color:#888;white-space:nowrap;">${fmtDt(entry.deletedAt)}</td>
-            <td style="padding:6px 8px;color:#888;font-size:0.78rem;">${esc(entry.deletedBy)}</td>
-            <td style="padding:6px 8px;">${esc(o.date||'')}</td>
-            <td style="padding:6px 8px;">${esc(o.orderNumber||'—')}</td>
-            <td style="padding:6px 8px;">${esc(displayItem(o.item||''))}</td>
-            <td style="padding:6px 8px;">${esc(o.customer||'')}</td>
+            <td style="padding:6px 8px;color:#888;font-size:0.78rem;white-space:nowrap;">${esc(entry.deletedBy)}</td>
+            <td style="padding:6px 8px;white-space:nowrap;">${esc(o.date||'')}</td>
+            <td style="padding:6px 8px;white-space:nowrap;">${esc(o.orderNumber||'—')}</td>
+            <td style="padding:6px 8px;white-space:nowrap;">${esc(displayItem(o.item||''))}</td>
+            <td style="padding:6px 8px;white-space:nowrap;">${esc(o.customer||'')}</td>
             <td style="padding:6px 4px;">
                 ${canRestore ? `<button onclick="restoreOrder('${o.id}')" style="background:#e8f5e9;border:1px solid #81c784;color:#2e7d32;padding:2px 8px;border-radius:5px;cursor:pointer;font-size:0.78rem;font-family:inherit;">還原</button>` : '<span style="color:#bbb;font-size:0.78rem;">已存在</span>'}
             </td>
