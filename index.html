@@ -1723,10 +1723,10 @@ async function handleFile(file) {
     } catch(e) { toast('解析失敗：'+e.message,'err'); console.error(e); }
 }
 function showPreview() {
-    // Build existing date map (orderNumber → date)
+    // Build existing date map (orderNumber → date)，只計算主品項（非加購）
     const existingDateByNum = {};
     for (const o of orders) {
-        if (o.orderNumber && !existingDateByNum[o.orderNumber]) existingDateByNum[o.orderNumber] = o.date;
+        if (o.orderNumber && !isAddonItem(o.item) && !existingDateByNum[o.orderNumber]) existingDateByNum[o.orderNumber] = o.date;
     }
     const validRows    = parsedRows.filter(r=>r.valid&&!r.cancelled);
     const cancelRows   = parsedRows.filter(r=>r.cancelled&&r.orderNumber);
@@ -1802,12 +1802,13 @@ function showPreview() {
     }
 }
 function doImport() {
-    // Build existing date map
+    // Build existing date map，只計算主品項（非加購）
     const existingDateByNum = {};
     for (const o of orders) {
-        if (o.orderNumber && !existingDateByNum[o.orderNumber]) existingDateByNum[o.orderNumber] = o.date;
+        if (o.orderNumber && !isAddonItem(o.item) && !existingDateByNum[o.orderNumber]) existingDateByNum[o.orderNumber] = o.date;
     }
-    const existing = new Set(orders.map(o=>o.orderNumber).filter(Boolean));
+    // 只有主品項（非加購）算已存在；若某訂單號碼只剩加購孤兒，仍允許重新匯入主品項
+    const existing = new Set(orders.filter(o=>o.orderNumber&&!isAddonItem(o.item)).map(o=>o.orderNumber));
     // 1. 刪除已取消訂單
     const cancelNums = new Set(
         parsedRows.filter(r=>r.cancelled&&r.orderNumber&&existing.has(r.orderNumber)).map(r=>r.orderNumber)
