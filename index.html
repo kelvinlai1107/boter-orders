@@ -799,7 +799,7 @@ async function saveData() {
 async function loadData(silent=false) {
     try {
         const url = await getUploadUrl();
-        const r = await fetch(url, { headers: { Authorization: `Bearer ${await getToken()}` } });
+        const r = await fetch(url, { headers: { Authorization: `Bearer ${await getToken()}` }, cache: 'no-store' });
         if (r.status === 404) { orders = []; render(); return; }
         if (!r.ok) throw new Error(r.status);
         const data = await r.json();
@@ -815,12 +815,18 @@ async function loadData(silent=false) {
         orders = JSON.parse(localStorage.getItem('boter_orders') || '[]');
         deletedLog = JSON.parse(localStorage.getItem('boter_deleted_log') || '[]');
         editLog = JSON.parse(localStorage.getItem('boter_edit_log') || '[]');
-        render(); if (!silent) { toast('使用本機暫存資料', ''); scrollToToday(); }
+        render(); updateSyncTs(true);
+        // 明顯錯誤提示，讓使用者知道資料未更新
+        toast(`⚠ 載入失敗，顯示本機暫存資料（${e.message}）`, 'err');
+        if (!silent) scrollToToday();
     }
 }
-function updateSyncTs() {
+function updateSyncTs(fromCache=false) {
     const el = document.getElementById('sync-ts');
-    if (el) el.textContent = `同步 ${new Date().toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit'})}`;
+    if (!el) return;
+    const time = new Date().toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit'});
+    el.textContent = fromCache ? `⚠ 本機暫存 ${time}` : `同步 ${time}`;
+    el.style.color = fromCache ? '#c0392b' : '#c9b99a';
 }
 
 /* ── ORDERS CRUD ── */
