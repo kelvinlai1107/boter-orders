@@ -377,14 +377,11 @@
                 <button class="view-tab active" id="tab-orders" onclick="setViewMode('orders')">外場</button>
                 <button class="view-tab" id="tab-production" onclick="setViewMode('production')">內場</button>
             </div>
-            <button class="btn-g mobile-hide" onclick="openImport()">📥 匯入 Cyberbiz</button>
-            <button class="btn-p mobile-hide" onclick="openAdd()">＋ 新增訂單</button>
+            <button class="btn-ic mobile-hide" onclick="openImport()" title="匯入 Cyberbiz" style="background:#5a7a2e;color:#fff;border-color:#5a7a2e;">📥</button>
+            <button class="btn-ic mobile-hide" onclick="openAdd()" title="新增訂單" style="background:var(--brand);color:#fff;border-color:var(--brand);">＋</button>
             <span id="sync-ts" style="font-size:0.72rem;color:#c9b99a;white-space:nowrap"></span>
             <button class="btn-ic" id="btn-reload" onclick="loadData()" title="重新載入最新資料">↻</button>
-            <button class="btn-b" id="btn-save" onclick="saveData()">☁ 儲存</button>
-            <button class="btn-ic mobile-hide" onclick="openPrintModal()" title="列印">🖨</button>
-            <button class="btn-ic mobile-hide" onclick="openProducts()" title="品項清單">📋</button>
-            <a href="manual.html" target="_blank" class="btn-ic mobile-hide" title="使用說明書">📖</a>
+            <button class="btn-ic" id="btn-save" onclick="saveData()" title="儲存" style="background:#0078d4;color:#fff;border-color:#0078d4;">☁</button>
             <button class="btn-ic mobile-hide" onclick="openSettings()" title="設定">⚙</button>
             <div class="avatar" id="avatar">K</div>
         </div>
@@ -580,7 +577,9 @@
                 <label class="lbl">目前登入帳號</label>
                 <div class="ctrl" style="background:#FDFAF7;color:#9B7850;" id="s-user">—</div>
             </div>
-            <div style="border-top:1px solid var(--border);padding-top:12px;">
+            <div style="border-top:1px solid var(--border);padding-top:12px;display:flex;gap:8px;flex-wrap:wrap;">
+                <button onclick="closeOverlay('settings-overlay');openProducts()" style="background:none;border:1px solid #9B7850;color:#9B7850;padding:6px 14px;border-radius:7px;cursor:pointer;font-family:inherit;font-size:0.83rem;">📋 品項清單</button>
+                <a href="manual.html" target="_blank" onclick="closeOverlay('settings-overlay')" style="background:none;border:1px solid #9B7850;color:#9B7850;padding:6px 14px;border-radius:7px;cursor:pointer;font-family:inherit;font-size:0.83rem;text-decoration:none;">📖 使用說明書</a>
                 <button onclick="openActivityLog('edit')" style="background:none;border:1px solid #9B7850;color:#9B7850;padding:6px 14px;border-radius:7px;cursor:pointer;font-family:inherit;font-size:0.83rem;">📋 操作紀錄</button>
             </div>
             <div style="border-top:1px solid var(--border);padding-top:12px;">
@@ -802,7 +801,7 @@ async function saveData() {
         if (!r.ok) throw new Error(r.status);
         updateSyncTs(); toast('已儲存到 SharePoint ✓', 'ok');
     } catch(e) { toast('儲存失敗：' + e.message, 'err'); }
-    finally { btn.innerHTML = '☁ 儲存'; btn.disabled = false; _pendingSave = false; }
+    finally { btn.innerHTML = '☁'; btn.disabled = false; _pendingSave = false; }
 }
 async function loadData(silent=false) {
     try {
@@ -905,7 +904,7 @@ function scheduleAutoSave() {
     _pendingSave = true;
     clearTimeout(_autoSaveTimer);
     const btn = document.getElementById('btn-save');
-    if (btn) { btn.innerHTML = '☁ 儲存中…'; btn.disabled = true; }
+    if (btn) { btn.innerHTML = '<span class="spinner"></span>'; btn.disabled = true; }
     _autoSaveTimer = setTimeout(async () => { _autoSaveTimer = null; await saveData(); }, 2000);
 }
 
