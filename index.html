@@ -226,6 +226,14 @@
         .spinner { display:inline-block; width:15px; height:15px; border:3px solid rgba(255,255,255,.4); border-top-color:#fff; border-radius:50%; animation:spin .7s linear infinite; vertical-align:middle; }
         @keyframes spin { to { transform:rotate(360deg); } }
 
+        /* ── TABLET RWD (iPad 等) ── */
+        @media (min-width: 769px) and (max-width: 1150px) {
+            .sched-table { table-layout:auto !important; font-size:0.82rem; }
+            .sched-table th, .sched-table td { padding:6px 5px; }
+            /* 外場：隱藏收件人電話欄 */
+            .sched-outer th:nth-child(9), .sched-outer td:nth-child(9) { display:none; }
+        }
+
         /* ── MOBILE RWD ── */
         @media (max-width: 768px) {
             /* Header */
